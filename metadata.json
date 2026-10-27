@@ -1,0 +1,6 @@
+{
+  "name": "PROOFLY — Campus Professional Intelligence Platform",
+  "description": "Turn campus activities into an evidence-based professional profile with AI skill constellation, institutional project similarity, and opportunity matching.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-color: #1A2040;
+    --surface-color: #222A52;
+    --elevated-color: #2B3563;
+    --border-subtle: rgba(255, 255, 255, 0.10);
+    --border-strong: rgba(255, 255, 255, 0.20);
+    --border-top-highlight: rgba(255, 255, 255, 0.18);
+    --text-primary: #F4F6FF;
+    --text-secondary: #BAC2DC;
+    --text-muted: #8F99B8;
+    --brand-accent: #8B7CFF;
+    --brand-amber: #FFC773;
+    --brand-teal: #2DD4BF;
+    --semantic-verified: #4ADE80;
+    --semantic-pending: #FBBF24;
+    --semantic-gap: #FB7185;
+    --type-project: #8B7CFF;
+    --type-hackathon: #FB923C;
+    --type-internship: #2DD4BF;
+    --type-certificate: #38BDF8;
+    --type-competition: #F472B6;
+    --type-achievement: #FFC773;
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Headings: Sora, 600/700, tracking -0.02em */
+  h1, h2, h3, h4, .font-display {
+    font-family: 'Sora', sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+
+  h1 {
+    font-size: clamp(2.25rem, 4.5vw, 3.25rem);
+    line-height: 1.18;
+  }
+
+  h2 {
+    font-size: clamp(1.5rem, 2.5vw, 1.875rem);
+    line-height: 1.25;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.35;
+  }
+
+  /* Mono code / telemetry: IBM Plex Mono */
+  .font-mono-data, .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  /* Editorial accent: Instrument Serif italic */
+  .font-serif-accent {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+}
+
+/* Ambient Mesh Gradient for Hero Areas */
+.bg-mesh {
+  background: radial-gradient(at 10% 20%, rgba(139, 124, 255, 0.18) 0px, transparent 50%),
+              radial-gradient(at 90% 15%, rgba(45, 212, 191, 0.16) 0px, transparent 50%),
+              radial-gradient(at 50% 80%, rgba(244, 114, 182, 0.10) 0px, transparent 50%);
+}
+
+.aurora-hero {
+  background: radial-gradient(at 15% 15%, rgba(139, 124, 255, 0.22) 0px, transparent 55%),
+              radial-gradient(at 85% 20%, rgba(45, 212, 191, 0.18) 0px, transparent 55%),
+              radial-gradient(at 50% 60%, rgba(244, 114, 182, 0.12) 0px, transparent 60%);
+}
+
+/* Glassmorphism Card with Gradient Border and Top Highlight */
+.card-glass {
+  background-color: rgba(34, 42, 82, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-top-color: rgba(255, 255, 255, 0.24);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px 0 rgba(10, 14, 30, 0.37);
+}
+
+.card-glass-glow {
+  background-color: rgba(34, 42, 82, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(139, 124, 255, 0.35);
+  border-top-color: rgba(255, 255, 255, 0.30);
+  border-radius: 24px;
+  box-shadow: 0 0 35px -5px rgba(139, 124, 255, 0.25), 0 8px 32px 0 rgba(10, 14, 30, 0.45);
+}
+
+/* Polished Card with subtle top-edge highlight */
+.card-polished {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-subtle);
+  border-top-color: var(--border-top-highlight);
+  border-radius: 20px;
+  box-shadow: 0 4px 24px -2px rgba(10, 14, 30, 0.35);
+}
+
+.card-elevated {
+  background-color: var(--elevated-color);
+  border: 1px solid var(--border-subtle);
+  border-top-color: var(--border-top-highlight);
+  border-radius: 20px;
+}
+
+/* Primary Button */
+.btn-primary {
+  background-color: var(--brand-accent);
+  color: #FFFFFF;
+  border-radius: 10px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+.btn-primary:hover {
+  background-color: #7b6be8;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(186, 194, 220, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(186, 194, 220, 0.35);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Print/PDF Layout: Recruiter-friendly 2 pages max */
+@media print {
+  body {
+    background-color: #FFFFFF !important;
+    color: #0F172A !important;
+  }
+  header, nav, .no-print, button:not(.print-show) {
+    display: none !important;
+  }
+  .card-polished, .card-elevated, .bg-\[\#242C41\], .bg-\[\#222A52\], .bg-\[\#1C2233\], .bg-\[\#1A2040\] {
+    background-color: #FFFFFF !important;
+    border: 1px solid #E2E8F0 !important;
+    color: #0F172A !important;
+    box-shadow: none !important;
+  }
+  .text-\[\#F4F6FF\], .text-\[\#F1F4FA\], h1, h2, h3 {
+    color: #0F172A !important;
+  }
+  .text-\[\#BAC2DC\], .text-\[\#B4BCD0\], p {
+    color: #475569 !important;
+  }
+  .text-\[\#8F99B8\], .text-\[\#8A94AD\] {
+    color: #64748B !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+}
