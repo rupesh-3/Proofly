@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+sentence-transformers
+psycopg[binary]
+pgvector
+pyjwt[crypto]
+pydantic
+python-dotenv
+httpx
+
