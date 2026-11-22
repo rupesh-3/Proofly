@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { 
   X, 
   Sparkles, 
   CheckCircle2, 
   ArrowRight,
-  Mail
+  Mail,
+  Lock
 } from 'lucide-react';
 import { UserRole } from '../../types';
 
@@ -16,9 +18,13 @@ interface AuthModalProps {
 
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   const { allUsers, switchUser, setActiveTab, triggerCelebration } = useApp();
+  const { signInWithEmail, isConfigured } = useAuth();
 
   const [selectedRole, setSelectedRole] = useState<UserRole>('student');
   const [email, setEmail] = useState('alex.rivera@stanford.edu');
+  const [password, setPassword] = useState('Proofly@2026');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   if (!isOpen) return null;
 
@@ -32,13 +38,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     onClose();
   };
 
-  const handleCustomLogin = (e: React.FormEvent) => {
+  const handleCustomLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const matched = allUsers.find(u => u.role === selectedRole);
-    if (matched) {
-      handleSelectDemoUser(matched.id);
-    } else {
-      onClose();
+    setErrorMsg(null);
+    setIsLoading(true);
+
+    try {
+      if (isConfigured && email && password) {
+        await signInWithEmail(email, password);
+        triggerCelebration();
+        onClose();
+      } else {
+        const matched = allUsers.find(u => u.role === selectedRole) || allUsers[0];
+        handleSelectDemoUser(matched.id);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err?.message || 'Login failed.');
+    } finally {
+      setIsLoading(false);
     }
   };
 

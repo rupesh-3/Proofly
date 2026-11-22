@@ -72,7 +72,7 @@ export const ProjectIdeaChecker: React.FC = () => {
           return prev + 1;
         } else {
           clearInterval(interval);
-          setTimeout(() => {
+          setTimeout(async () => {
             const input = {
               title: title.trim() || 'Untitled Capstone Concept',
               domain: selectedDomain,
@@ -81,7 +81,7 @@ export const ProjectIdeaChecker: React.FC = () => {
               methodology: ['Empirical benchmarking', 'Kernel profiling'],
               description: problemDescription
             };
-            const res = checkProjectSimilarity(input);
+            const res = await checkProjectSimilarity(input);
             setResults(res);
             setIsAnalyzing(false);
           }, 400);

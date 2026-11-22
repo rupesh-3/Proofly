@@ -34,8 +34,10 @@ export const AddActivityWizard: React.FC<AddActivityWizardProps> = ({ isOpen, on
   const [metrics, setMetrics] = useState('');
   const [url, setUrl] = useState('');
   const [fileName, setFileName] = useState('');
+  const [fileObject, setFileObject] = useState<File | null>(null);
   const [rawSkills, setRawSkills] = useState('');
   const [autoVerifyDemo, setAutoVerifyDemo] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   if (!isOpen) return null;
 
@@ -77,9 +79,9 @@ export const AddActivityWizard: React.FC<AddActivityWizardProps> = ({ isOpen, on
       metrics: metrics || undefined,
       url: url || undefined,
       fileName: fileName || (url ? 'github_repository_link' : 'capstone_submission.pdf'),
-      fileSize: fileName ? '1.4 MB' : undefined,
+      fileSize: fileObject ? `${(fileObject.size / (1024 * 1024)).toFixed(1)} MB` : (fileName ? '1.4 MB' : undefined),
       skillsTagged: parsedSkills.length > 0 ? parsedSkills : ['Python', 'Machine Learning']
-    }, autoVerifyDemo);
+    }, autoVerifyDemo, fileObject || undefined);
 
     triggerCelebration();
     onClose();
@@ -247,24 +249,43 @@ export const AddActivityWizard: React.FC<AddActivityWizardProps> = ({ isOpen, on
                 </div>
               </div>
 
-              {/* Simulated file upload */}
+              {/* Real & Simulated file upload */}
               <div>
                 <label className="block text-xs font-mono-data text-[#8A94AD] uppercase tracking-wider mb-1">
                   Upload Signed Faculty Rubric or Certificate
                 </label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".pdf,.png,.jpg,.jpeg,.docx"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setFileObject(file);
+                      setFileName(file.name);
+                    }
+                  }}
+                />
                 <div 
-                  onClick={() => setFileName('faculty_evaluation_signed_capstone.pdf')}
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.click();
+                    } else {
+                      setFileName('faculty_evaluation_signed_capstone.pdf');
+                    }
+                  }}
                   className="p-6 rounded-[12px] border-2 border-dashed border-[rgba(255,255,255,0.10)] hover:border-[#7C8CFF]/50 bg-[#1C2233] text-center cursor-pointer transition-colors"
                 >
                   <Upload className="w-5 h-5 text-[#8A94AD] mx-auto mb-2" />
                   {fileName ? (
                     <div className="text-xs font-mono-data text-[#4ADE80] font-semibold">
-                      {fileName} (1.4 MB) · Attached
+                      {fileName} {fileObject ? `(${(fileObject.size / (1024 * 1024)).toFixed(1)} MB)` : '(1.4 MB)'} · Attached
                     </div>
                   ) : (
                     <>
                       <div className="text-xs font-medium text-[#F1F4FA]">Click to attach file</div>
-                      <div className="text-[10px] text-[#8A94AD] font-mono-data mt-1">PDF, DOCX, or PNG up to 25MB</div>
+                      <div className="text-[10px] text-[#8A94AD] font-mono-data mt-1">PDF, DOCX, or PNG up to 25MB (stores in Supabase)</div>
                     </>
                   )}
                 </div>

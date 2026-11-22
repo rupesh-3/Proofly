@@ -11,6 +11,9 @@ from typing import Generator
 
 import psycopg
 from pgvector.psycopg import register_vector
+from dotenv import load_dotenv
+
+load_dotenv()
 
 _DATABASE_URL = os.environ.get("DATABASE_URL", "")
 

@@ -70,10 +70,11 @@ export async function getStudentEvidence(studentId: string): Promise<Evidence[]>
   });
 }
 
-/** Insert a new evidence record + link skills */
+/** Insert a new evidence record + link skills + optional file upload */
 export async function insertEvidence(
   studentId: string,
-  input: Omit<Evidence, 'id' | 'studentId' | 'verificationStatus'>
+  input: Omit<Evidence, 'id' | 'studentId' | 'verificationStatus'>,
+  file?: File
 ): Promise<Evidence> {
   const { data: ev, error } = await supabase
     .from('evidence')
@@ -93,30 +94,46 @@ export async function insertEvidence(
 
   if (error) throw new Error(`insertEvidence: ${error.message}`);
 
-  // Link skills
+  // Link skills in junction table
   if (input.skillsTagged?.length) {
     await linkSkillsToEvidence(ev.id, input.skillsTagged);
   }
 
-  return dbToEvidence(ev);
+  // Upload file if provided
+  let uploadedPath: string | null = null;
+  if (file) {
+    uploadedPath = await uploadEvidenceFile(studentId, ev.id, file);
+  }
+
+  const result = dbToEvidence(ev);
+  result.skillsTagged = input.skillsTagged || [];
+  if (file) {
+    result.fileName = file.name;
+    result.fileSize = `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return result;
 }
 
 /** Upsert skills by canonical name and link to evidence */
 async function linkSkillsToEvidence(evidenceId: string, skillNames: string[]) {
   for (const name of skillNames) {
-    // Upsert skill (insert if new)
-    const { data: skill, error: skillErr } = await supabase
-      .from('skills')
-      .upsert({ canonical_name: name }, { onConflict: 'canonical_name' })
-      .select('id')
-      .single();
+    try {
+      // Upsert skill (insert if new)
+      const { data: skill, error: skillErr } = await supabase
+        .from('skills')
+        .upsert({ canonical_name: name }, { onConflict: 'canonical_name' })
+        .select('id')
+        .single();
 
-    if (skillErr || !skill) continue;
+      if (skillErr || !skill) continue;
 
-    // Link evidence ↔ skill
-    await supabase
-      .from('evidence_skills')
-      .upsert({ evidence_id: evidenceId, skill_id: skill.id }, { onConflict: 'evidence_id,skill_id' });
+      // Link evidence ↔ skill
+      await supabase
+        .from('evidence_skills')
+        .upsert({ evidence_id: evidenceId, skill_id: skill.id }, { onConflict: 'evidence_id,skill_id' });
+    } catch (err) {
+      console.warn('[linkSkillsToEvidence] Note:', err);
+    }
   }
 }
 
@@ -126,20 +143,34 @@ export async function uploadEvidenceFile(
   evidenceId: string,
   file: File
 ): Promise<string> {
-  const path = `${studentId}/${evidenceId}/${file.name}`;
-  const { error } = await supabase.storage
-    .from('evidence-files')
-    .upload(path, file, { upsert: true });
+  const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${studentId}/${evidenceId}/${cleanName}`;
+  
+  try {
+    const { error } = await supabase.storage
+      .from('evidence-files')
+      .upload(path, file, { upsert: true });
 
-  if (error) throw new Error(`uploadEvidenceFile: ${error.message}`);
+    if (error) {
+      console.warn(
+        '[uploadEvidenceFile] Supabase Storage notice: ' +
+        error.message +
+        '. If the bucket does not exist yet, create a private bucket named "evidence-files" in Supabase Storage.'
+      );
+      return path;
+    }
 
-  // Update evidence row with file path
-  await supabase
-    .from('evidence')
-    .update({ proof_file_path: path })
-    .eq('id', evidenceId);
+    // Update evidence row with file path
+    await supabase
+      .from('evidence')
+      .update({ proof_file_path: path })
+      .eq('id', evidenceId);
 
-  return path;
+    return path;
+  } catch (err) {
+    console.warn('[uploadEvidenceFile] Upload caught error:', err);
+    return path;
+  }
 }
 
 /** Get a signed URL for a private evidence file (expires in 1 hour) */

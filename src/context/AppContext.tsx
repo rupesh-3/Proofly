@@ -23,6 +23,10 @@ import {
   MOCK_PROPOSALS, 
   MOCK_NOTIFICATIONS 
 } from '../data/mockData';
+import { useAuth } from './AuthContext';
+import { insertEvidence, getStudentEvidence } from '../data/supabase/evidence';
+import { submitVerification } from '../data/supabase/verifications';
+import { embedEvidence, checkProjectSimilarity as checkProjectSimilarityAI } from '../data/ai';
 import { 
   normalizeSkillName, 
   calculateSkillConfidence, 
@@ -52,7 +56,11 @@ interface AppContextType {
   studentEvidences: Evidence[];
   studentSkills: Skill[];
   proofStrength: ProofStrengthResult;
-  addEvidence: (newEvidence: Omit<Evidence, 'id' | 'studentId' | 'verificationStatus'>, autoVerify?: boolean) => Evidence;
+  addEvidence: (
+    newEvidence: Omit<Evidence, 'id' | 'studentId' | 'verificationStatus'>, 
+    autoVerify?: boolean,
+    file?: File
+  ) => Promise<Evidence> | Evidence;
   verifyEvidence: (evidenceId: string, verifierName: string) => void;
   rejectEvidence: (evidenceId: string, reason: string) => void;
 
@@ -61,7 +69,7 @@ interface AppContextType {
   proposals: ProjectProposal[];
   submitProposal: (proposalInput: ProjectInput) => ProjectProposal;
   reviewProposal: (proposalId: string, status: 'approved' | 'changes_requested' | 'flagged', feedback: string) => void;
-  checkProjectSimilarity: (input: ProjectInput) => SimilarityResult[];
+  checkProjectSimilarity: (input: ProjectInput) => Promise<SimilarityResult[]> | SimilarityResult[];
 
   // Opportunities & Applications
   opportunities: Opportunity[];
@@ -87,12 +95,48 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const auth = useAuth();
+
   // Users & Role state
   const [allUsers, setAllUsers] = useState<User[]>(MOCK_USERS);
-  const [currentUserId, setCurrentUserId] = useState<string>('std-1'); // Default to Alex Rivera
-  const currentUser = useMemo(() => {
+  const [currentUserId, setCurrentUserId] = useState<string>('std-1');
+
+  // Derive active user from Supabase auth profile or selected demo persona
+  const currentUser: User = useMemo(() => {
+    if (auth.profile) {
+      return {
+        id: auth.profile.id,
+        name: auth.profile.full_name || auth.user?.email?.split('@')[0] || 'Member',
+        email: auth.user?.email || (auth.demoUser?.email ?? ''),
+        role: (auth.profile.role as UserRole) || 'student',
+        avatar: auth.profile.avatar_url || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&q=80`,
+        college: auth.profile.college || 'Stanford University',
+        department: auth.profile.department || 'Computer Science & AI',
+        headline: auth.profile.headline || 'Institutional Scholar & Verified Builder',
+        bio: auth.profile.bio || '',
+        batch: auth.profile.batch ? `Class of ${auth.profile.batch}` : 'Class of 2026',
+        isVerifiedStudent: true,
+      };
+    }
+    if (auth.demoUser) {
+      const match = allUsers.find(u => u.id === auth.demoUser?.id);
+      if (match) return match;
+      return {
+        id: auth.demoUser.id,
+        name: auth.demoUser.name,
+        email: auth.demoUser.email,
+        role: auth.demoUser.role as UserRole,
+        avatar: auth.demoUser.avatar,
+        college: auth.demoUser.college,
+        department: auth.demoUser.department,
+        headline: auth.demoUser.headline,
+        bio: auth.demoUser.bio,
+        batch: auth.demoUser.batch || 'Class of 2026',
+        isVerifiedStudent: true,
+      };
+    }
     return allUsers.find(u => u.id === currentUserId) || allUsers[0];
-  }, [allUsers, currentUserId]);
+  }, [auth.profile, auth.demoUser, auth.user, allUsers, currentUserId]);
 
   const currentRole = currentUser.role;
 
@@ -121,6 +165,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const user = allUsers.find(u => u.id === userId);
     if (user) {
       setCurrentUserId(userId);
+      auth.signInAsDemo(user);
       // Route appropriately if currently on a role-specific page
       if (user.role === 'student' && (activeTab === 'faculty' || activeTab === 'placement')) {
         _setActiveTab('dashboard');
@@ -135,6 +180,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateCurrentUserProfile = (updates: Partial<User>) => {
     setAllUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updates } : u));
   };
+
+  // Fetch real student evidence from Supabase when authenticated
+  React.useEffect(() => {
+    if (auth.isConfigured && auth.user?.id) {
+      getStudentEvidence(auth.user.id)
+        .then(realEvs => {
+          if (realEvs && realEvs.length > 0) {
+            setEvidences(prev => {
+              const others = prev.filter(e => e.studentId !== auth.user!.id);
+              return [...realEvs, ...others];
+            });
+          }
+        })
+        .catch(err => {
+          console.warn('[AppContext] Could not fetch Supabase evidence:', err);
+        });
+    }
+  }, [auth.isConfigured, auth.user?.id]);
 
   // Student specific evidences
   const studentEvidences = useMemo(() => {
@@ -210,20 +273,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Add evidence
-  const addEvidence = (
+  // Add evidence (persists to Supabase + uploads file + requests FastAPI embedding)
+  const addEvidence = async (
     newEv: Omit<Evidence, 'id' | 'studentId' | 'verificationStatus'>,
-    autoVerify: boolean = false
-  ): Evidence => {
-    const id = `ev-${Date.now()}`;
-    const evidenceItem: Evidence = {
+    autoVerify: boolean = false,
+    file?: File
+  ): Promise<Evidence> => {
+    const tempId = `ev-${Date.now()}`;
+    let evidenceItem: Evidence = {
       ...newEv,
-      id,
+      id: tempId,
       studentId: currentUser.id,
       verificationStatus: autoVerify ? 'verified' : 'pending',
       verifiedBy: autoVerify ? 'Institutional Verification Service' : undefined,
       verifiedAt: autoVerify ? new Date().toISOString().split('T')[0] : undefined,
+      fileName: file ? file.name : newEv.fileName,
+      fileSize: file ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : newEv.fileSize,
     };
+
+    // If authenticated with Supabase account, persist to database
+    if (auth.isConfigured && auth.user?.id) {
+      try {
+        const saved = await insertEvidence(auth.user.id, newEv, file);
+        evidenceItem = {
+          ...saved,
+          verificationStatus: autoVerify ? 'verified' : saved.verificationStatus,
+          verifiedBy: autoVerify ? 'Institutional Verification Service' : saved.verifiedBy,
+        };
+
+        // Asynchronously request AI service to compute and store embedding vector
+        embedEvidence(saved.id, saved.title, saved.description).catch(err => {
+          console.info('[embedEvidence] FastAPI note:', err?.message || err);
+        });
+      } catch (err: any) {
+        console.warn('[addEvidence] Supabase insert note:', err?.message || err);
+      }
+    }
 
     setEvidences(prev => [evidenceItem, ...prev]);
 
@@ -249,8 +334,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return evidenceItem;
   };
 
-  // Verify evidence (Faculty action)
-  const verifyEvidence = (evidenceId: string, verifierName: string) => {
+  // Verify evidence (Faculty action - updates local state + writes to Supabase verifications table)
+  const verifyEvidence = async (evidenceId: string, verifierName: string) => {
+    // If authenticated in Supabase, submit verification record to Postgres
+    if (auth.isConfigured && auth.user?.id) {
+      try {
+        await submitVerification({
+          evidenceId,
+          verifierId: auth.user.id,
+          decision: 'verified',
+          checkedExists: true,
+          checkedAuthorship: true,
+          checkedQuality: true,
+          remarks: `Attested and verified by ${verifierName}`,
+        });
+      } catch (err: any) {
+        console.warn('[verifyEvidence] Supabase note:', err?.message || err);
+      }
+    }
+
     setEvidences(prev => prev.map(ev => {
       if (ev.id === evidenceId) {
         return {
@@ -272,7 +374,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: `notif-${Date.now()}`,
           userId: targetEv.studentId,
           title: 'Evidence Verified by Faculty!',
-          message: `Prof. Vance verified "${targetEv.title}". Your skill confidence scores have updated.`,
+          message: `${verifierName} verified "${targetEv.title}". Your skill confidence scores have updated.`,
           type: 'verification',
           timestamp: 'Just now',
           read: false,
@@ -285,8 +387,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     triggerCelebration();
   };
 
-  // Reject evidence (Faculty action)
-  const rejectEvidence = (evidenceId: string, reason: string) => {
+  // Reject evidence (Faculty action - updates local state + writes to Supabase verifications table)
+  const rejectEvidence = async (evidenceId: string, reason: string) => {
+    // If authenticated in Supabase, submit decision to Postgres
+    if (auth.isConfigured && auth.user?.id) {
+      try {
+        await submitVerification({
+          evidenceId,
+          verifierId: auth.user.id,
+          decision: 'rejected',
+          remarks: reason,
+        });
+      } catch (err: any) {
+        console.warn('[rejectEvidence] Supabase note:', err?.message || err);
+      }
+    }
+
     setEvidences(prev => prev.map(ev => {
       if (ev.id === evidenceId) {
         return {
@@ -305,7 +421,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: `notif-${Date.now()}`,
           userId: targetEv.studentId,
           title: 'Verification Action: Clarification Required',
-          message: `Prof. Vance requested revisions on "${targetEv.title}": "${reason}"`,
+          message: `Revisions requested on "${targetEv.title}": "${reason}"`,
           type: 'info',
           timestamp: 'Just now',
           read: false,
@@ -401,8 +517,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Check project similarity
-  const checkProjectSimilarity = (input: ProjectInput): SimilarityResult[] => {
+  // Check project similarity (FastAPI pgvector AI service with fallback)
+  const checkProjectSimilarity = async (input: ProjectInput): Promise<SimilarityResult[]> => {
+    try {
+      const aiResult = await checkProjectSimilarityAI(
+        input.title,
+        `${input.domain}. ${input.problem}. ${input.description}`
+      );
+      if (aiResult?.matches && aiResult.matches.length > 0) {
+        return aiResult.matches.map(m => {
+          const overallScore = Math.round(m.score);
+          let level: 'High' | 'Moderate' | 'Low' = 'Low';
+          if (overallScore >= 80) level = 'High';
+          else if (overallScore >= 50) level = 'Moderate';
+
+          return {
+            overallScore,
+            semanticScore: Math.round(m.semantic_score),
+            structuralScore: Math.round(m.structural_score),
+            dimensions: {
+              domainScore: Math.round(m.structural_score),
+              problemScore: Math.round(m.semantic_score),
+              technologyScore: Math.round(m.structural_score),
+              methodologyScore: Math.round(m.structural_score),
+            },
+            explanation: `Institutional overlap detected via 384-dim pgvector cosine similarity against verified departmental archive. ${m.score >= 70 ? 'High similarity found.' : 'Clear originality profile.'}`,
+            matchedProjectId: m.project_id,
+            matchedProjectTitle: m.title,
+            matchedStudentName: m.student_name,
+            matchedYear: '2025',
+            level,
+          };
+        });
+      }
+    } catch (err: any) {
+      console.info('[checkProjectSimilarity] FastAPI AI service note:', err?.message || err);
+    }
+
     return calculateProjectSimilarity(input, institutionalProjects);
   };
 

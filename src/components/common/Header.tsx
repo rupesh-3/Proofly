@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { 
   ShieldCheck, 
   Search, 
@@ -11,7 +12,8 @@ import {
   Layers,
   GraduationCap,
   ArrowLeft,
-  LayoutDashboard
+  LayoutDashboard,
+  LogOut
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -20,6 +22,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenAddActivity, onOpenAuth }) => {
+  const { logOut } = useAuth();
   const { 
     currentUser, 
     allUsers, 
@@ -314,15 +317,25 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddActivity, onOpenAuth })
                     </div>
                   </button>
                 ))}
-                <div className="mt-2 pt-2 border-t border-[rgba(255,255,255,0.10)] px-2">
+                <div className="mt-2 pt-2 border-t border-[rgba(255,255,255,0.10)] px-2 space-y-1">
                   <button
                     onClick={() => {
                       setShowRoleDropdown(false);
                       onOpenAuth();
                     }}
-                    className="text-[11px] text-[#7C8CFF] hover:underline"
+                    className="w-full text-left text-[11px] text-[#7C8CFF] hover:underline py-1 block cursor-pointer"
                   >
-                    Sign in with another ID
+                    Switch or connect another ID
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setShowRoleDropdown(false);
+                      await logOut();
+                    }}
+                    className="w-full text-left text-[11px] text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-[6px] px-1.5 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out of Workspace</span>
                   </button>
                 </div>
               </div>

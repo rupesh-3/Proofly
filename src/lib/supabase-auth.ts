@@ -7,16 +7,54 @@ export type AuthUser = User;
  * Sign up with email + password.
  * The database trigger auto-creates the profile row.
  */
-export async function signUp(email: string, password: string, fullName: string) {
+export async function signUp(
+  email: string, 
+  password: string, 
+  fullName: string, 
+  role: string = 'student', 
+  department?: string, 
+  batch?: number
+) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: { 
+        full_name: fullName,
+        role,
+        department: department || '',
+        batch: batch || null,
+      },
     },
   });
   if (error) throw error;
+
+  // Ensure profile has matching metadata if session is immediately available
+  if (data.user) {
+    try {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: fullName,
+        role: role as 'student' | 'faculty' | 'placement' | 'admin',
+        department: department || null,
+        batch: batch || null,
+      }, { onConflict: 'id' });
+    } catch {
+      // Trigger handles fallback
+    }
+  }
+
   return data;
+}
+
+/**
+ * Send password reset email.
+ */
+export async function resetPassword(email: string) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin,
+  });
+  if (error) throw error;
 }
 
 /**

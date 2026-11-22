@@ -3,10 +3,18 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn(
-    '[Proofly] Supabase env vars not set. Running in mock mode. ' +
-    'Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to enable live mode.'
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl && 
+  supabaseAnonKey && 
+  supabaseAnonKey.trim() !== '' &&
+  supabaseAnonKey !== 'your-supabase-anon-key-here' &&
+  !supabaseUrl.includes('placeholder')
+);
+
+if (!isSupabaseConfigured) {
+  console.info(
+    '[Proofly] Running with demo profile layer. ' +
+    'Provide VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env for live Supabase auth.'
   );
 }
 
