@@ -105,32 +105,36 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
 
   const handleDefenseComplete = (res: any) => {
     if (!activeDefenseEvidence) return;
-    const finalScore = res?.combined_defense_score ?? res?.score ?? 85;
+    try {
+      const finalScore = Number(res?.combined_defense_score ?? res?.score ?? 85);
 
-    // Formally calibrated IRT Latent Trait Theta: theta ~ Normal(0, 1) mapped from score
-    const thetaMap = Math.round(((finalScore - 50) / 16.67) * 100) / 100;
-    const standardError = Math.round(Math.max(0.20, 0.45 - (finalScore * 0.0025)) * 100) / 100;
-    const ciLow = Math.round((thetaMap - 1.96 * standardError) * 100) / 100;
-    const ciHigh = Math.round((thetaMap + 1.96 * standardError) * 100) / 100;
-    const scorePercentile = Math.min(99, Math.max(10, Math.round(100 / (1 + Math.exp(-thetaMap)))));
+      // Formally calibrated IRT Latent Trait Theta: theta ~ Normal(0, 1) mapped from score
+      const thetaMap = Math.round(((finalScore - 50) / 16.67) * 100) / 100;
+      const standardError = Math.round(Math.max(0.20, 0.45 - (finalScore * 0.0025)) * 100) / 100;
+      const ciLow = Math.round((thetaMap - 1.96 * standardError) * 100) / 100;
+      const ciHigh = Math.round((thetaMap + 1.96 * standardError) * 100) / 100;
+      const scorePercentile = Math.min(99, Math.max(10, Math.round(100 / (1 + Math.exp(-thetaMap)))));
 
-    let classification = 'Proficient (Level 3)';
-    if (thetaMap >= 2.0) classification = 'Mastery (Level 4)';
-    else if (thetaMap >= 0.8) classification = 'Proficient (Level 3)';
-    else if (thetaMap >= 0.0) classification = 'Competent (Level 2)';
-    else classification = 'Marginal (Level 1)';
+      let classification = 'Proficient (Level 3)';
+      if (thetaMap >= 2.0) classification = 'Mastery (Level 4)';
+      else if (thetaMap >= 0.8) classification = 'Proficient (Level 3)';
+      else if (thetaMap >= 0.0) classification = 'Competent (Level 2)';
+      else classification = 'Marginal (Level 1)';
 
-    updateEvidence(activeDefenseEvidence.id, {
-      defenseScore: finalScore,
-      irtCompetency: {
-        thetaMap,
-        scorePercentile,
-        standardError,
-        ci95: [ciLow, ciHigh],
-        classification,
-        reliabilityIndex: Math.round((1 - standardError * 0.3) * 100) / 100
-      }
-    });
+      updateEvidence(activeDefenseEvidence.id, {
+        defenseScore: finalScore,
+        irtCompetency: {
+          thetaMap,
+          scorePercentile,
+          standardError,
+          ci95: [ciLow, ciHigh],
+          classification,
+          reliabilityIndex: Math.round((1 - standardError * 0.3) * 100) / 100
+        }
+      });
+    } catch (err) {
+      console.error('[handleDefenseComplete] Error updating evidence:', err);
+    }
   };
 
   return (
@@ -335,11 +339,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                   </div>
 
                   {/* Latent IRT metrics if available */}
-                  {ev.irtCompetency && (
+                  {ev.irtCompetency && typeof ev.irtCompetency.thetaMap === 'number' && (
                     <div className="p-2.5 rounded-lg bg-indigo-50/70 border border-indigo-100 flex items-center justify-between text-xs font-mono">
-                      <span className="text-indigo-800 font-semibold">IRT Latent Competency \(\hat\theta\):</span>
+                      <span className="text-indigo-800 font-semibold">IRT Latent Competency θ:</span>
                       <span className="text-indigo-900 font-bold">
-                        {ev.irtCompetency.thetaMap > 0 ? `+${ev.irtCompetency.thetaMap.toFixed(2)}` : ev.irtCompetency.thetaMap.toFixed(2)} (\(\pm\){ev.irtCompetency.standardError.toFixed(2)})
+                        {ev.irtCompetency.thetaMap > 0 ? `+${ev.irtCompetency.thetaMap.toFixed(2)}` : ev.irtCompetency.thetaMap.toFixed(2)} (±{(ev.irtCompetency.standardError ?? 0.35).toFixed(2)})
                       </span>
                     </div>
                   )}

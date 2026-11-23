@@ -835,9 +835,11 @@ async def evaluate_defense_submission(
             question_evals.append(eval_result)
             transcript.append({
                 "question": question.question_text,
+                "question_type": question.question_type,
                 "response": "",
                 "score": 0,
                 "time_taken": 0,
+                "feedback": "No response provided.",
             })
             continue
 
