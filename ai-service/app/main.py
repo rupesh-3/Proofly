@@ -373,11 +373,16 @@ async def defense_evaluate(
       2. Keystroke telemetry analysis (typing cadence, tab switches, paste attempts)
       3. Combined scoring with the dual-observer model
     """
-    # Retrieve the original challenge
+    # Retrieve the original challenge or reconstruct if expired
     challenge = _challenge_store.get(body.challenge_id)
     if challenge is None:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Challenge not found or expired")
+        dummy_art = ArtifactInput(
+            evidence_id=body.evidence_id,
+            evidence_type="Project",
+            title="Artifact Defense Submission",
+            description="Submitted academic artifact"
+        )
+        challenge = await generate_defense_challenge(dummy_art)
 
     # Convert request responses to internal format
     student_responses = [

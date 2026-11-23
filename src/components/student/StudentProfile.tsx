@@ -68,8 +68,22 @@ export const StudentProfile: React.FC = () => {
     studentEvidences, 
     proofStrength,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    updateCurrentUserProfile,
+    triggerCelebration
   } = useApp();
+
+  // Profile customization modal state
+  const [isProfileEditModalOpen, setProfileEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState(currentUser.name);
+  const [editHeadline, setEditHeadline] = useState(currentUser.headline);
+  const [editBio, setEditBio] = useState(currentUser.bio);
+  const [editCollege, setEditCollege] = useState(currentUser.college);
+  const [editDepartment, setEditDepartment] = useState(currentUser.department);
+  const [editBatch, setEditBatch] = useState(currentUser.batch || 'Class of 2026');
+  const [editGithub, setEditGithub] = useState(currentUser.github || '');
+  const [editLinkedin, setEditLinkedin] = useState(currentUser.linkedin || '');
+  const [editWebsite, setEditWebsite] = useState(currentUser.website || '');
 
   // Portfolio view mode: edit mode (owner) vs recruiter preview mode
   const [portfolioMode, setPortfolioMode] = useState<'edit' | 'public'>(
@@ -177,7 +191,7 @@ export const StudentProfile: React.FC = () => {
       oneLineOutcome: 'Grand Champion / 1st of 240 collegiate hackathon teams.',
       tags: ['TypeScript', 'React', 'Gemini API', 'Canvas API'],
       isVerified: true,
-      similarityMatch: '7% (original hackathon prototype)',
+      similarityMatch: '7% (original capstone submission)',
       problem: 'Classroom lectures lacked real-time visual diagram synthesis for complex algorithms and organic chemistry structures.',
       role: 'Full-Stack Lead & Engine Developer (36-hour sprint)',
       approach: 'Combined Whisper streaming transcription with structured Gemini API chaining to dynamically render declarative SVG diagram canvases.',
@@ -304,6 +318,28 @@ export const StudentProfile: React.FC = () => {
             </button>
           </div>
 
+          {/* Edit Profile button */}
+          {portfolioMode === 'edit' && (
+            <button
+              onClick={() => {
+                setEditName(currentUser.name);
+                setEditHeadline(currentUser.headline);
+                setEditBio(currentUser.bio);
+                setEditCollege(currentUser.college);
+                setEditDepartment(currentUser.department);
+                setEditBatch(currentUser.batch || 'Class of 2026');
+                setEditGithub(currentUser.github || '');
+                setEditLinkedin(currentUser.linkedin || '');
+                setEditWebsite(currentUser.website || '');
+                setProfileEditModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold transition-colors cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Edit Profile</span>
+            </button>
+          )}
+
           {/* Cryptographic Attestation inspect button */}
           <button
             onClick={() => setCryptoAttestationOpen(true)}
@@ -332,7 +368,7 @@ export const StudentProfile: React.FC = () => {
           <div className="flex items-center gap-2">
             <Eye className="w-4 h-4 text-indigo-600 shrink-0" />
             <span>
-              <strong>Recruiter Simulation View:</strong> You are previewing this portfolio exactly as corporate hiring teams and research labs see it.
+              <strong>Recruiter Public Preview:</strong> You are previewing this portfolio exactly as corporate hiring teams and research labs see it.
             </span>
           </div>
           <button
@@ -411,11 +447,32 @@ export const StudentProfile: React.FC = () => {
               </div>
             </div>
 
-            {/* Recruiter Action Buttons */}
+            {/* Recruiter & Edit Action Buttons */}
             <div className="flex flex-row sm:flex-row lg:flex-col gap-2.5 shrink-0 no-print">
+              {portfolioMode === 'edit' && (
+                <button
+                  onClick={() => {
+                    setEditName(currentUser.name);
+                    setEditHeadline(currentUser.headline);
+                    setEditBio(currentUser.bio);
+                    setEditCollege(currentUser.college);
+                    setEditDepartment(currentUser.department);
+                    setEditBatch(currentUser.batch || 'Class of 2026');
+                    setEditGithub(currentUser.github || '');
+                    setEditLinkedin(currentUser.linkedin || '');
+                    setEditWebsite(currentUser.website || '');
+                    setProfileEditModalOpen(true);
+                  }}
+                  className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Customize Profile</span>
+                </button>
+              )}
+
               <button
                 onClick={() => setContactModalOpen(true)}
-                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Mail className="w-3.5 h-3.5" />
                 <span>Contact {currentUser.name.split(' ')[0]}</span>
@@ -802,7 +859,7 @@ export const StudentProfile: React.FC = () => {
           <div>
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              Proofly Verification Protocol (IEEE Directive)
+              Proofly Institutional Verification Protocol
             </h2>
             <p className="text-xs text-slate-600 mt-1 max-w-xl">
               Every credential is mathematically backed by 4 institutional pillars: Sovereign Faculty Evaluation, Git AST Provenance, Adaptive Socratic Defense, and Ed25519 Cryptographic Attestation.
@@ -1340,6 +1397,198 @@ export const StudentProfile: React.FC = () => {
             >
               Done
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* PROFILE CUSTOMIZATION / EDIT MODAL */}
+      {/* ================================================================ */}
+      {isProfileEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div 
+            className="w-full max-w-2xl rounded-2xl bg-white border border-slate-200 shadow-2xl overflow-hidden flex flex-col justify-between max-h-[85vh]"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <Edit3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Customize Academic Profile</h3>
+                  <p className="text-xs text-slate-500">Update your verified portfolio credentials and contact endpoints.</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setProfileEditModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form Body */}
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateCurrentUserProfile({
+                  name: editName.trim() || currentUser.name,
+                  headline: editHeadline.trim() || currentUser.headline,
+                  bio: editBio.trim() || currentUser.bio,
+                  college: editCollege.trim() || currentUser.college,
+                  department: editDepartment.trim() || currentUser.department,
+                  batch: editBatch.trim() || currentUser.batch,
+                  github: editGithub.trim() || undefined,
+                  linkedin: editLinkedin.trim() || undefined,
+                  website: editWebsite.trim() || undefined,
+                });
+                setProfileEditModalOpen(false);
+                triggerCelebration();
+              }}
+              className="p-6 overflow-y-auto space-y-5 text-left text-xs"
+            >
+              {/* Full Name & Headline */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Full Legal / Academic Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    placeholder="e.g. Alex Rivera"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Graduation Batch / Year</label>
+                  <input
+                    type="text"
+                    value={editBatch}
+                    onChange={e => setEditBatch(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    placeholder="e.g. Class of 2026"
+                  />
+                </div>
+              </div>
+
+              {/* Headline */}
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Professional Headline</label>
+                <input
+                  type="text"
+                  required
+                  value={editHeadline}
+                  onChange={e => setEditHeadline(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                  placeholder="e.g. AI Systems Researcher & Distributed Systems Engineer"
+                />
+              </div>
+
+              {/* Department & College */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">College / University</label>
+                  <input
+                    type="text"
+                    value={editCollege}
+                    onChange={e => setEditCollege(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    placeholder="e.g. Stanford University"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Department / Discipline</label>
+                  <input
+                    type="text"
+                    value={editDepartment}
+                    onChange={e => setEditDepartment(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 font-medium"
+                    placeholder="e.g. Computer Science & AI"
+                  />
+                </div>
+              </div>
+
+              {/* Bio */}
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Bio / Research Summary</label>
+                <textarea
+                  rows={3}
+                  value={editBio}
+                  onChange={e => setEditBio(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:border-indigo-500 font-normal leading-relaxed resize-none"
+                  placeholder="Describe your technical focus, research interests, and project specializations..."
+                />
+              </div>
+
+              {/* Links */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <span className="block text-[11px] font-mono text-slate-500 uppercase tracking-wider font-semibold">
+                  Verified Online Links
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-600 mb-1 flex items-center gap-1">
+                      <Github className="w-3.5 h-3.5" />
+                      <span>GitHub</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={editGithub}
+                      onChange={e => setEditGithub(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
+                      placeholder="https://github.com/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 mb-1 flex items-center gap-1">
+                      <Linkedin className="w-3.5 h-3.5" />
+                      <span>LinkedIn</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={editLinkedin}
+                      onChange={e => setEditLinkedin(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
+                      placeholder="https://linkedin.com/in/..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-600 mb-1 flex items-center gap-1">
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Website</span>
+                    </label>
+                    <input
+                      type="url"
+                      value={editWebsite}
+                      onChange={e => setEditWebsite(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:border-indigo-500"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setProfileEditModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-600 hover:text-slate-900 font-medium hover:bg-slate-100 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold shadow-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Save Profile</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

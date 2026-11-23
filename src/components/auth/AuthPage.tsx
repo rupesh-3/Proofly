@@ -194,7 +194,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
             <div className="flex items-center gap-2">
               <span className="text-xl font-bold tracking-tight text-slate-900">PROOFLY</span>
               <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold">
-                IEEE Research Prototype
+                Institutional Edition
               </span>
             </div>
             <p className="text-[11px] text-slate-500 hidden sm:block">Proof Over Claim · Competency & Originality Verification</p>
@@ -215,19 +215,18 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
       {/* Main Container */}
       <main className="max-w-5xl mx-auto px-4 py-6 flex-1 flex flex-col justify-center w-full">
         
-        {/* Connection Status Bar */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white border border-slate-200 shadow-xs text-xs">
+        {/* Security & Cryptographic Trust Banner */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl bg-white border border-slate-200 shadow-xs text-xs">
           <div className="flex items-center gap-2">
-            <Database className="w-4 h-4 text-indigo-600" />
-            <span className="text-slate-600">Database Service:</span>
-            <code className="text-indigo-700 font-mono bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[11px]">
-              pbexpyjmsdltjhnmejjk.supabase.co
-            </code>
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span className="text-slate-800 font-semibold">Zero-Trust Credentialing Network</span>
+            <span className="text-slate-300 hidden sm:inline">|</span>
+            <span className="text-slate-500 font-mono text-[11px] hidden sm:inline">W3C Verifiable Credentials · Ed25519 Signed</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-slate-500 font-mono text-[11px]">
-              {isConfigured ? 'Supabase Auth Ready' : 'Demo Mode Active (Ready for Anon Key)'}
+            <span className="text-slate-600 font-mono text-[11px]">
+              Adaptive Defense & Provenance Active
             </span>
           </div>
         </div>
@@ -618,7 +617,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
 
       {/* Footer */}
       <footer className="w-full max-w-7xl mx-auto px-4 py-4 text-center text-xs text-slate-400">
-        Proofly Platform © 2026 · IEEE Research Prototype
+        Proofly Platform © 2026 · Institutional Competency & Credentialing Network
       </footer>
 
     </div>

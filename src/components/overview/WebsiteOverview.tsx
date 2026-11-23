@@ -191,7 +191,7 @@ export const WebsiteOverview: React.FC<WebsiteOverviewProps> = ({ onNavigate }) 
               PROOFLY
             </span>
             <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[10px] font-mono font-semibold">
-              IEEE Prototype Specification
+              System Architecture & Protocol Specification
             </span>
           </div>
         </div>
@@ -227,7 +227,7 @@ export const WebsiteOverview: React.FC<WebsiteOverviewProps> = ({ onNavigate }) 
           <div className="lg:col-span-7 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-mono font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>IEEE Research Implementation Directive</span>
+              <span>Institutional Verification Protocol & Competency Engine</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1]">

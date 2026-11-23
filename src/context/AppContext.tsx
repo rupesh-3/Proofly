@@ -179,7 +179,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCurrentUserProfile = (updates: Partial<User>) => {
-    setAllUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updates } : u));
+    setAllUsers(prev => {
+      const exists = prev.some(u => u.id === currentUser.id);
+      if (exists) {
+        return prev.map(u => u.id === currentUser.id ? { ...u, ...updates } : u);
+      } else {
+        return [{ ...currentUser, ...updates }, ...prev];
+      }
+    });
   };
 
   // Fetch real student evidence from Supabase when authenticated

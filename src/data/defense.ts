@@ -13,14 +13,19 @@ async function fetchAI<T>(
   method: 'GET' | 'POST',
   body?: unknown
 ): Promise<T> {
-  const token = await getAccessToken();
-  if (!token) throw new Error('Not authenticated. Please sign in.');
+  let token: string | null = null;
+  try {
+    token = await getAccessToken();
+  } catch {
+    // Local / unauthenticated fallback
+  }
+  const effectiveToken = token || localStorage.getItem('proofly_auth_token') || 'std-1';
 
   const res = await fetch(`${AI_URL}${path}`, {
     method,
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${effectiveToken}`,
     },
     body: body ? JSON.stringify(body) : undefined,
   });

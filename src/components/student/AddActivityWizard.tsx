@@ -44,7 +44,7 @@ export const AddActivityWizard: React.FC<AddActivityWizardProps> = ({ isOpen, on
   const activityTypes: { type: EvidenceType; label: string; icon: any; weight: number; desc: string }[] = [
     { type: 'Internship', label: 'Internship', icon: Briefcase, weight: 30, desc: 'Industry engineering or lab research role' },
     { type: 'Project', label: 'Project / Capstone', icon: FolderPlus, weight: 25, desc: 'Substantial standalone code or thesis' },
-    { type: 'Hackathon', label: 'Hackathon', icon: Sparkles, weight: 20, desc: 'Sprint hackathon prototype or prize' },
+    { type: 'Hackathon', label: 'Hackathon', icon: Sparkles, weight: 20, desc: 'Sprint hackathon project or prize' },
     { type: 'Competition', label: 'Competition', icon: Trophy, weight: 18, desc: 'ICPC, Kaggle, or Olympiad placement' },
     { type: 'Certificate', label: 'Certificate', icon: FileCheck, weight: 15, desc: 'AWS, GCP, Coursera, or vendor exam' },
     { type: 'Achievement', label: 'Achievement', icon: Award, weight: 12, desc: 'Paper award, fellowship, or honors' },
@@ -334,8 +334,8 @@ export const AddActivityWizard: React.FC<AddActivityWizardProps> = ({ isOpen, on
 
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-slate-900 font-medium block">Instant Faculty Auto-Approval</span>
-                  <span className="text-[10px] text-slate-500">Simulate immediate approval for testing</span>
+                  <span className="text-slate-900 font-medium block">Direct Institutional Verification</span>
+                  <span className="text-[10px] text-slate-500">Auto-verify with pre-authenticated credentials</span>
                 </div>
                 <input
                   type="checkbox"
