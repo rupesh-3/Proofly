@@ -63,6 +63,7 @@ interface AppContextType {
   ) => Promise<Evidence> | Evidence;
   verifyEvidence: (evidenceId: string, verifierName: string) => void;
   rejectEvidence: (evidenceId: string, reason: string) => void;
+  updateEvidence: (evidenceId: string, updates: Partial<Evidence>) => void;
 
   // Institutional Projects & Proposals
   institutionalProjects: Project[];
@@ -387,6 +388,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     triggerCelebration();
   };
 
+  // Update evidence fields (e.g. Socratic defense results, IRT score, attestation)
+  const updateEvidence = (evidenceId: string, updates: Partial<Evidence>) => {
+    setEvidences(prev => prev.map(ev => {
+      if (ev.id === evidenceId) {
+        return { ...ev, ...updates };
+      }
+      return ev;
+    }));
+  };
+
   // Reject evidence (Faculty action - updates local state + writes to Supabase verifications table)
   const rejectEvidence = async (evidenceId: string, reason: string) => {
     // If authenticated in Supabase, submit decision to Postgres
@@ -691,6 +702,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addEvidence,
         verifyEvidence,
         rejectEvidence,
+        updateEvidence,
         institutionalProjects,
         proposals,
         submitProposal,

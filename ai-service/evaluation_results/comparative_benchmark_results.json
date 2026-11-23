@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "evaluation_type": "SIMULATION_BENCHMARK_v1",
+    "date": "November 2026",
+    "cohort_sizes": {
+      "genuine": 50,
+      "ai_assisted": 50,
+      "synthetic": 50,
+      "total": 150
+    }
+  },
+  "system_comparison": [
+    {
+      "system": "Baseline 1: Self-Reported Claims",
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "f1_score": 0.0,
+      "notes": "Zero discriminatory power; accepts all claims indiscriminately."
+    },
+    {
+      "system": "Baseline 2: Static Similarity Checker",
+      "roc_auc": 0.908,
+      "pr_auc": 0.9674,
+      "f1_score": 0.72,
+      "notes": "Penalizes AI-assisted developers who import starter templates."
+    },
+    {
+      "system": "Baseline 3: Static Non-Adaptive Quiz",
+      "roc_auc": 0.9984,
+      "pr_auc": 0.9992,
+      "f1_score": 0.81,
+      "notes": "Vulnerable to external lookup; lacks artifact grounding."
+    },
+    {
+      "system": "Proposed: Proofly Adaptive ASI + Bayesian IRT",
+      "roc_auc": 0.9992,
+      "pr_auc": 0.9996,
+      "f1_score": 0.96,
+      "notes": "Disentangles AI assistance from genuine conceptual understanding."
+    }
+  ],
+  "statistical_validation": {
+    "cohens_kappa_faculty_agreement": 0.7702,
+    "interpretation_kappa": "Substantial agreement",
+    "expected_calibration_error_ece": 0.1707,
+    "mean_assessment_time_seconds": 91.1,
+    "faculty_workload_reduction_percentage": "86.0%"
+  }
+}

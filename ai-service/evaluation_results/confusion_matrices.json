@@ -1,0 +1,68 @@
+{
+  "threshold_30": {
+    "threshold": 30,
+    "tp": 50,
+    "fn": 0,
+    "fp": 0,
+    "tn": 50,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "accuracy": 1.0
+  },
+  "threshold_40": {
+    "threshold": 40,
+    "tp": 50,
+    "fn": 0,
+    "fp": 0,
+    "tn": 50,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "accuracy": 1.0
+  },
+  "threshold_50": {
+    "threshold": 50,
+    "tp": 50,
+    "fn": 0,
+    "fp": 0,
+    "tn": 50,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "accuracy": 1.0
+  },
+  "threshold_60": {
+    "threshold": 60,
+    "tp": 48,
+    "fn": 2,
+    "fp": 0,
+    "tn": 50,
+    "precision": 1.0,
+    "recall": 0.96,
+    "f1_score": 0.9796,
+    "accuracy": 0.98
+  },
+  "threshold_70": {
+    "threshold": 70,
+    "tp": 34,
+    "fn": 16,
+    "fp": 0,
+    "tn": 50,
+    "precision": 1.0,
+    "recall": 0.68,
+    "f1_score": 0.8095,
+    "accuracy": 0.84
+  },
+  "optimal": {
+    "threshold": 20.0,
+    "tp": 50,
+    "fn": 0,
+    "fp": 0,
+    "tn": 50,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "accuracy": 1.0
+  }
+}

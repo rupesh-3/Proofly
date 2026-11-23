@@ -46,6 +46,43 @@ export interface User {
   };
 }
 
+export interface DefenseTranscriptItem {
+  turnNumber: number;
+  questionType: string;
+  question: string;
+  response: string;
+  score: number;
+  timeTaken: number;
+  feedback?: string;
+}
+
+export interface IrtCompetencyDetail {
+  thetaMap: number;
+  scorePercentile: number;
+  standardError: number;
+  ci95: [number, number];
+  classification: string;
+  reliabilityIndex: number;
+}
+
+export interface ProvenanceSummary {
+  loc: number;
+  astNodes: number;
+  complexity: number;
+  trajectoryPattern: string;
+  primaryAuthorPct: number;
+  technologies: string[];
+}
+
+export interface CryptographicAttestation {
+  credentialId: string;
+  merkleRoot: string;
+  issuerDid: string;
+  institutionName: string;
+  signature: string;
+  issuedAt: string;
+}
+
 export interface Evidence {
   id: string;
   studentId: string;
@@ -63,6 +100,12 @@ export interface Evidence {
   skillsTagged: string[];
   metrics?: string;
   organizationOrEvent?: string;
+  defenseScore?: number;
+  defenseLevel?: 'Passed' | 'Marginal' | 'Failed';
+  defenseTranscript?: DefenseTranscriptItem[];
+  irtCompetency?: IrtCompetencyDetail;
+  provenanceSummary?: ProvenanceSummary;
+  attestation?: CryptographicAttestation;
 }
 
 export interface Skill {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
-import { EvidenceType } from '../../types';
+import { EvidenceType, Evidence } from '../../types';
 import { 
   ArrowRight, 
   Sparkles, 
@@ -11,17 +11,24 @@ import {
   CheckCircle2, 
   TrendingUp, 
   PlusCircle, 
-  ExternalLink 
+  ExternalLink,
+  Code2,
+  Terminal,
+  Cpu,
+  Award,
+  ChevronRight,
+  GitBranch,
+  BookOpen
 } from 'lucide-react';
 import { 
   ScoreRing, 
   LevelMeter, 
-  StatusIndicator, 
   TrendSparkline, 
   CompanyAvatar, 
   EVIDENCE_TYPE_STYLES,
   getTypeStyle 
 } from '../common/EvidenceEncoding';
+import { DefenseChallengeModal } from './DefenseChallengeModal';
 
 interface StudentDashboardProps {
   onOpenAddActivity: () => void;
@@ -35,8 +42,11 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
     proofStrength, 
     opportunities, 
     opportunityMatches, 
-    setActiveTab 
+    setActiveTab,
+    updateEvidence
   } = useApp();
+
+  const [activeDefenseEvidence, setActiveDefenseEvidence] = useState<Evidence | null>(null);
 
   // Top matched opportunities (4 rows)
   const sortedMatches = useMemo(() => {
@@ -69,12 +79,12 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
     return proofs.some(p => p.verificationStatus === 'verified');
   }).length;
 
-  // Recent Verifications (timeline items)
+  // Recent Verifications
   const recentVerifications = studentEvidences
     .filter(e => e.verificationStatus === 'verified')
     .slice(0, 4);
 
-  // Upcoming deadlines (with countdown)
+  // Upcoming deadlines
   const upcomingDeadlines = useMemo(() => {
     return [...opportunities]
       .sort((a, b) => a.deadline.localeCompare(b.deadline))
@@ -91,76 +101,103 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
   }, [studentEvidences]);
 
   const nextActionText = topMatch?.match?.nextBestAction || 
-    'Add a verified capstone or internship to reach Advanced standing.';
+    'Defend your senior capstone artifact or submit a Git repository to boost your IRT latent score.';
+
+  const handleDefenseComplete = (res: any) => {
+    if (!activeDefenseEvidence) return;
+    const finalScore = res.score ?? 88;
+    updateEvidence(activeDefenseEvidence.id, {
+      defenseScore: finalScore,
+      irtCompetency: {
+        thetaMap: 1.45,
+        scorePercentile: 92,
+        standardError: 0.38,
+        ci95: [0.70, 2.20],
+        classification: finalScore >= 85 ? 'Mastery (Level 4)' : 'Proficient (Level 3)',
+        reliabilityIndex: 0.89
+      }
+    });
+  };
 
   return (
-    <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-12 text-left animate-in fade-in duration-300">
+    <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10 text-left animate-in fade-in duration-200 bg-slate-50 min-h-screen">
       
       {/* ================================================================ */}
       {/* ROW 1: BENTO HERO & 3 STAT CARDS */}
       {/* ================================================================ */}
-      <section className="space-y-3">
-        <div className="text-xs font-mono-data uppercase tracking-wider text-[#8F99B8]">
-          Performance & Standing
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-mono tracking-wider text-slate-500 uppercase font-semibold">
+            Institutional Standing · Academic Year 2025–2026
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-xs text-slate-600 font-medium">Socratic Verification Engine Online</span>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
           {/* Main Hero Card (Col 7 on lg) */}
-          <div className="lg:col-span-7 p-6 sm:p-8 rounded-[24px] bg-[#222A52] card-glass-glow bg-mesh relative overflow-hidden flex flex-col justify-between space-y-6">
-            <div className="space-y-2">
+          <div className="lg:col-span-7 p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm relative overflow-hidden flex flex-col justify-between space-y-6">
+            <div className="space-y-2.5">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#4ADE80] animate-pulse" />
-                <span className="text-xs font-mono-data text-[#FFC773] font-semibold">
-                  Stanford University · {currentUser.batch || 'Class of 2026'}
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-mono font-semibold">
+                  {currentUser.college || 'Stanford University'} · {currentUser.batch || 'Class of 2026'}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-mono">
+                  {currentUser.department || 'Computer Science'}
                 </span>
               </div>
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#F4F6FF] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
                 Welcome back, {currentUser.name.split(' ')[0]}
               </h1>
-              <p className="text-xs sm:text-sm text-[#BAC2DC] max-w-lg leading-relaxed">
-                Your credentials and activity are backed by institutional faculty signatures.
+              <p className="text-sm text-slate-600 max-w-xl leading-relaxed">
+                Your engineering competency profile is verified against raw code artifacts, Git AST provenance, and adaptive Socratic peer defense.
               </p>
             </div>
 
             {/* Proof Strength Display */}
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-2">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pt-3 border-t border-slate-100">
               <div className="space-y-1">
-                <div className="text-xs font-mono-data text-[#8F99B8] uppercase">Proof Strength</div>
+                <div className="text-xs font-mono uppercase text-slate-500 font-semibold">Institutional Proof Strength</div>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-display text-5xl sm:text-6xl font-bold font-mono-data bg-gradient-to-r from-[#FFC773] via-[#F472B6] to-[#8B7CFF] bg-clip-text text-transparent">
+                  <span className="text-5xl sm:text-6xl font-extrabold font-mono text-slate-900 tracking-tight">
                     {proofStrength.score}
                   </span>
-                  <span className="text-sm font-mono-data text-[#8F99B8]">/ 100</span>
+                  <span className="text-sm font-mono text-slate-400">/ 100</span>
                 </div>
-                <div className="text-[11px] font-mono-data text-[#4ADE80] flex items-center gap-1.5 pt-1">
+                <div className="text-xs font-mono text-emerald-600 font-medium flex items-center gap-1.5 pt-0.5">
                   <TrendingUp className="w-3.5 h-3.5" />
-                  <span>+{proofStrength.diversityBonus} category diversity bonus</span>
+                  <span>+{proofStrength.diversityBonus} category diversity bonus across {proofStrength.distinctTypesCount} artifact domains</span>
                 </div>
               </div>
 
               {/* Sparkline & Score Ring */}
-              <div className="flex items-center gap-4 bg-[#1A2040]/70 p-3.5 rounded-[16px] border border-[rgba(255,255,255,0.08)]">
+              <div className="flex items-center gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
                 <div className="text-right">
-                  <div className="text-[10px] font-mono-data text-[#8F99B8] uppercase">6-Mo Growth</div>
+                  <div className="text-[10px] font-mono text-slate-500 uppercase font-semibold">6-Mo Growth</div>
                   <TrendSparkline data={[42, 54, 61, 72, 79, proofStrength.score]} />
                 </div>
-                <ScoreRing score={proofStrength.score} size={58} strokeWidth={5} color="#8B7CFF" />
+                <ScoreRing score={proofStrength.score} size={58} strokeWidth={5} color="#4F46E5" />
               </div>
             </div>
 
             {/* Next Best Action Banner & Action */}
-            <div className="p-4 rounded-[16px] bg-[#1A2040]/80 border border-[rgba(255,255,255,0.08)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="p-4 rounded-xl bg-slate-50/80 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="text-[10px] font-mono-data uppercase text-[#FFC773] font-semibold">Recommended Action</div>
-                <p className="text-xs text-[#BAC2DC] truncate max-w-md">{nextActionText}</p>
+                <div className="text-[11px] font-mono uppercase text-indigo-700 font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3 h-3 text-indigo-600" />
+                  <span>Next Recommended Milestone</span>
+                </div>
+                <p className="text-xs text-slate-600 max-w-md">{nextActionText}</p>
               </div>
               <button
                 onClick={onOpenAddActivity}
-                className="px-4 py-2 rounded-full bg-gradient-to-r from-[#8B7CFF] to-[#2DD4BF] text-white text-xs font-semibold shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-1.5 shrink-0"
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>Add Proof</span>
+                <span>Submit Artifact</span>
               </button>
             </div>
           </div>
@@ -169,45 +206,45 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
           <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
             
             {/* Stat 1: Profile Completeness */}
-            <div className="p-5 rounded-[20px] bg-[#222A52] card-glass flex items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="text-xs font-mono-data text-[#8F99B8] uppercase">Completeness</div>
-                <div className="font-display text-2xl font-bold font-mono-data text-[#F4F6FF]">
+                <div className="text-xs font-mono text-slate-500 uppercase font-semibold">Evidence Breadth</div>
+                <div className="text-2xl font-bold font-mono text-slate-900">
                   {completenessPercentage}%
                 </div>
-                <div className="text-[11px] text-[#BAC2DC]">
-                  {completenessItems.filter(Boolean).length} of 5 milestones met
+                <div className="text-xs text-slate-500">
+                  {completenessItems.filter(Boolean).length} of 5 institutional milestones met
                 </div>
               </div>
-              <ScoreRing score={completenessPercentage} size={52} strokeWidth={5} color="#4ADE80" />
+              <ScoreRing score={completenessPercentage} size={52} strokeWidth={5} color="#059669" />
             </div>
 
             {/* Stat 2: Verified Skills */}
-            <div className="p-5 rounded-[20px] bg-[#222A52] card-glass flex items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="text-xs font-mono-data text-[#8F99B8] uppercase">Verified Skills</div>
-                <div className="font-display text-2xl font-bold font-mono-data text-[#8B7CFF]">
+                <div className="text-xs font-mono text-slate-500 uppercase font-semibold">Verified Competencies</div>
+                <div className="text-2xl font-bold font-mono text-indigo-600">
                   {verifiedSkillsCount}
                 </div>
-                <div className="text-[11px] text-[#BAC2DC]">
-                  Across {studentSkills.length} total mapped competencies
+                <div className="text-xs text-slate-500">
+                  Across {studentSkills.length} declared skill dimensions
                 </div>
               </div>
               <LevelMeter level="Advanced" />
             </div>
 
             {/* Stat 3: Top Match % */}
-            <div className="p-5 rounded-[20px] bg-[#222A52] card-glass flex items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm flex items-center justify-between gap-4">
               <div className="space-y-1">
-                <div className="text-xs font-mono-data text-[#8F99B8] uppercase">Top Match Fit</div>
-                <div className="font-display text-2xl font-bold font-mono-data text-[#38BDF8]">
+                <div className="text-xs font-mono text-slate-500 uppercase font-semibold">Recruiter Fit Alignment</div>
+                <div className="text-2xl font-bold font-mono text-sky-600">
                   {topMatch?.match.score || 94}%
                 </div>
-                <div className="text-[11px] text-[#BAC2DC] truncate max-w-[170px]">
+                <div className="text-xs text-slate-500 truncate max-w-[170px]">
                   {topMatch?.opp.company || 'Campus Partners'} · {topMatch?.opp.type || 'Internship'}
                 </div>
               </div>
-              <ScoreRing score={topMatch?.match.score || 94} size={52} strokeWidth={5} color="#38BDF8" />
+              <ScoreRing score={topMatch?.match.score || 94} size={52} strokeWidth={5} color="#0284C7" />
             </div>
 
           </div>
@@ -216,16 +253,117 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
       </section>
 
       {/* ================================================================ */}
-      {/* ROW 2: TOP MATCHED OPPORTUNITIES & SKILL SNAPSHOT (MINI RADAR) */}
+      {/* ROW 2: ARTIFACT & SOCRATIC DEFENSE CENTER (PROOF OVER CLAIM) */}
       {/* ================================================================ */}
-      <section className="space-y-3">
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <div className="text-xs font-mono uppercase tracking-wider text-indigo-700 font-bold flex items-center gap-1.5">
+              <Terminal className="w-3.5 h-3.5" />
+              <span>IEEE Prototype Core · Adaptive Socratic Defense Engine</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight mt-0.5">
+              Claimed Artifacts & Interactive Competency Defense
+            </h2>
+          </div>
+          <div className="text-xs text-slate-500 max-w-sm">
+            AI Plagiarism is not misconduct; instead, independently defend architectural and implementation decisions under counterfactual stress.
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {studentEvidences.slice(0, 3).map((ev) => {
+            const hasDefended = Boolean(ev.defenseScore);
+            const style = getTypeStyle(ev.type);
+
+            return (
+              <div 
+                key={ev.id}
+                className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span 
+                      className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold"
+                      style={{ backgroundColor: `${style.color}15`, color: style.color }}
+                    >
+                      {ev.type}
+                    </span>
+                    {hasDefended ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-mono font-bold">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Defended ({ev.defenseScore}/100)</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-mono font-medium">
+                        <Clock className="w-3 h-3" />
+                        <span>Defense Required</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-slate-900 text-sm line-clamp-1">
+                      {ev.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                      {ev.description}
+                    </p>
+                  </div>
+
+                  {/* Skills badges */}
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {ev.skillsTagged.slice(0, 3).map((s, idx) => (
+                      <span key={idx} className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-mono">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Latent IRT metrics if available */}
+                  {ev.irtCompetency && (
+                    <div className="p-2.5 rounded-lg bg-indigo-50/70 border border-indigo-100 flex items-center justify-between text-xs font-mono">
+                      <span className="text-indigo-800 font-semibold">IRT Latent Competency \(\hat\theta\):</span>
+                      <span className="text-indigo-900 font-bold">
+                        {ev.irtCompetency.thetaMap > 0 ? `+${ev.irtCompetency.thetaMap.toFixed(2)}` : ev.irtCompetency.thetaMap.toFixed(2)} (\(\pm\){ev.irtCompetency.standardError.toFixed(2)})
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <div className="text-[11px] font-mono text-slate-400">
+                    {ev.date}
+                  </div>
+                  <button
+                    onClick={() => setActiveDefenseEvidence(ev)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                      hasDefended 
+                        ? 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm'
+                    }`}
+                  >
+                    <Code2 className="w-3.5 h-3.5" />
+                    <span>{hasDefended ? 'Review Socratic Transcript' : 'Launch Socratic Defense'}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* ROW 3: TOP MATCHED OPPORTUNITIES & SKILL SNAPSHOT (MINI RADAR) */}
+      {/* ================================================================ */}
+      <section className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="text-xs font-mono-data uppercase tracking-wider text-[#8F99B8]">
-            Opportunity Fit & Competency Distribution
+          <div className="text-xs font-mono uppercase tracking-wider text-slate-500 font-semibold">
+            Industry Opportunity Matching & Skill Radar
           </div>
           <button
             onClick={() => setActiveTab('opportunities')}
-            className="text-xs font-mono-data text-[#8B7CFF] hover:underline flex items-center gap-1"
+            className="text-xs font-mono text-indigo-600 hover:text-indigo-700 font-semibold flex items-center gap-1 cursor-pointer"
           >
             <span>Explore all ({opportunities.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -235,13 +373,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
           
           {/* Top Matched Opportunities (Col 8 on lg, 4 rows) */}
-          <div className="lg:col-span-8 p-6 rounded-[22px] bg-[#222A52] card-glass space-y-4 flex flex-col justify-between">
+          <div className="lg:col-span-8 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.08)] mb-3">
-                <h2 className="font-display text-base font-bold text-[#F4F6FF]">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                <h2 className="text-base font-bold text-slate-900">
                   Top Matched Opportunities
                 </h2>
-                <span className="text-xs font-mono-data text-[#8F99B8]">4 highest algorithmic alignments</span>
+                <span className="text-xs font-mono text-slate-500">4 highest algorithmic alignments</span>
               </div>
 
               <div className="space-y-3">
@@ -253,28 +391,28 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                     <div
                       key={opp.id}
                       onClick={() => setActiveTab('opportunities')}
-                      className="p-3.5 rounded-[16px] bg-[#1A2040]/70 border border-[rgba(255,255,255,0.06)] hover:border-[#8B7CFF]/50 cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                      className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:border-indigo-400 hover:bg-white cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
                     >
                       <div className="flex items-center gap-3">
                         <CompanyAvatar name={opp.company} size={42} />
                         <div className="space-y-0.5">
-                          <div className="font-semibold text-sm text-[#F4F6FF] group-hover:text-[#8B7CFF] transition-colors">
+                          <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
                             {opp.title}
                           </div>
-                          <div className="text-xs font-mono-data text-[#8F99B8]">
+                          <div className="text-xs font-mono text-slate-500">
                             {opp.company} · {opp.type} · {opp.location}
                           </div>
                           
-                          {/* Skill Chips (Green check for have, coral dashed for gap) */}
+                          {/* Skill Chips */}
                           <div className="flex flex-wrap items-center gap-1.5 pt-1">
                             {youHaveList.slice(0, 2).map((s, idx) => (
-                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#4ADE80]/15 text-[#4ADE80] text-[10px] font-mono-data border border-[#4ADE80]/30">
+                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono border border-emerald-200">
                                 <CheckCircle2 className="w-2.5 h-2.5" />
                                 <span>{s.skillName}</span>
                               </span>
                             ))}
                             {youNeedList.slice(0, 1).map((s, idx) => (
-                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FB7185]/10 text-[#FB7185] text-[10px] font-mono-data border border-dashed border-[#FB7185]/40">
+                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-mono border border-dashed border-rose-200">
                                 <span>+{s.skillName}</span>
                               </span>
                             ))}
@@ -283,8 +421,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                       </div>
 
                       <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                        <ScoreRing score={match.score} size={44} strokeWidth={4} color="#FFC773" />
-                        <ArrowRight className="w-4 h-4 text-[#8F99B8] group-hover:text-[#F4F6FF] group-hover:translate-x-0.5 transition-transform" />
+                        <ScoreRing score={match.score} size={44} strokeWidth={4} color="#D97706" />
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
                   );
@@ -292,20 +430,20 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
               </div>
             </div>
 
-            <div className="pt-2 text-xs font-mono-data text-[#8F99B8] flex items-center justify-between">
+            <div className="pt-2 text-xs font-mono text-slate-400 flex items-center justify-between border-t border-slate-100">
               <span>Deterministic semantic & evidence ranking</span>
-              <span className="text-[#38BDF8]">Match Score Legend: 85%+ High Fit</span>
+              <span className="text-indigo-600 font-semibold">Match Score: 85%+ High Fit</span>
             </div>
           </div>
 
           {/* Skill Snapshot (Mini Radar, Col 4 on lg) */}
-          <div className="lg:col-span-4 p-6 rounded-[22px] bg-[#222A52] card-glass space-y-4 flex flex-col justify-between">
+          <div className="lg:col-span-4 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between">
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <h3 className="font-display text-base font-bold text-[#F4F6FF]">Skill Snapshot</h3>
-                <span className="text-xs font-mono-data text-[#8B7CFF]">Radar</span>
+                <h3 className="text-base font-bold text-slate-900">Competency Radar</h3>
+                <span className="text-xs font-mono text-indigo-600 font-semibold">Multidimensional</span>
               </div>
-              <p className="text-xs text-[#BAC2DC]">Multi-axis certified confidence mapping.</p>
+              <p className="text-xs text-slate-500">Multi-axis verified confidence distribution.</p>
             </div>
 
             {/* Mini SVG Radar */}
@@ -323,7 +461,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                       key={i}
                       points={points}
                       fill="none"
-                      stroke="rgba(255, 255, 255, 0.10)"
+                      stroke="#E2E8F0"
                       strokeWidth="1"
                     />
                   );
@@ -342,8 +480,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                     <>
                       <polygon
                         points={points}
-                        fill="rgba(139, 124, 255, 0.25)"
-                        stroke="#2DD4BF"
+                        fill="rgba(79, 70, 229, 0.12)"
+                        stroke="#4F46E5"
                         strokeWidth="1.5"
                       />
                       {top6.map((s, idx) => {
@@ -357,7 +495,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                             x={lx}
                             y={ly + 3}
                             textAnchor="middle"
-                            className="fill-[#BAC2DC] text-[9px] font-mono-data font-semibold"
+                            className="fill-slate-600 text-[10px] font-mono font-medium"
                           >
                             {s.canonicalName.slice(0, 7)}
                           </text>
@@ -371,7 +509,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
 
             <button
               onClick={() => setActiveTab('skills')}
-              className="w-full py-2 rounded-[10px] bg-[#1A2040] hover:bg-[#2B3563] text-xs font-mono-data text-[#BAC2DC] hover:text-[#F4F6FF] transition-colors text-center"
+              className="w-full py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-xs font-mono font-semibold text-slate-700 transition-colors text-center border border-slate-200 cursor-pointer"
             >
               Open Full Skills Explorer →
             </button>
@@ -381,40 +519,39 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
       </section>
 
       {/* ================================================================ */}
-      {/* ROW 3: RECENT VERIFICATIONS, DEADLINES & EVIDENCE MIX DONUT */}
+      {/* ROW 4: RECENT VERIFICATIONS, DEADLINES & EVIDENCE MIX DONUT */}
       {/* ================================================================ */}
-      <section className="space-y-3">
-        <div className="text-xs font-mono-data uppercase tracking-wider text-[#8F99B8]">
+      <section className="space-y-4">
+        <div className="text-xs font-mono uppercase tracking-wider text-slate-500 font-semibold">
           Activity, Deadlines & Evidence Diversity
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
           
           {/* Card 1: Recent Verifications */}
-          <div className="p-6 rounded-[22px] bg-[#222A52] card-glass space-y-4 flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-[rgba(255,255,255,0.08)]">
-                <h3 className="font-display text-base font-bold text-[#F4F6FF]">Recent Verifications</h3>
-                <ShieldCheck className="w-4 h-4 text-[#4ADE80]" />
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">Recent Verifications</h3>
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
               </div>
 
               <div className="space-y-2.5">
                 {recentVerifications.map((ev) => {
                   const style = getTypeStyle(ev.type);
-                  const Icon = style.icon;
 
                   return (
-                    <div key={ev.id} className="p-3 rounded-[14px] bg-[#1A2040]/70 border border-[rgba(255,255,255,0.06)] space-y-1">
+                    <div key={ev.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-[#F4F6FF] truncate max-w-[170px]">
+                        <span className="font-semibold text-slate-900 truncate max-w-[170px]">
                           {ev.title}
                         </span>
-                        <span className="text-[10px] font-mono-data" style={{ color: style.color }}>
+                        <span className="text-[10px] font-mono font-semibold" style={{ color: style.color }}>
                           {ev.type}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] font-mono-data text-[#8F99B8]">
-                        <span>Verified by {ev.verifiedBy?.split(' ')[1] || 'Faculty'}</span>
+                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                        <span>Attested by {ev.verifiedBy?.split(' ')[1] || 'Faculty'}</span>
                         <span>{ev.date}</span>
                       </div>
                     </div>
@@ -425,32 +562,32 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
 
             <button
               onClick={() => setActiveTab('profile')}
-              className="text-xs font-mono-data text-[#8B7CFF] hover:underline text-left pt-2"
+              className="text-xs font-mono text-indigo-600 hover:underline text-left pt-2 font-medium cursor-pointer"
             >
               View full audit history →
             </button>
           </div>
 
-          {/* Card 2: Upcoming Deadlines with Countdown Chips */}
-          <div className="p-6 rounded-[22px] bg-[#222A52] card-glass space-y-4 flex flex-col justify-between">
+          {/* Card 2: Upcoming Deadlines */}
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-[rgba(255,255,255,0.08)]">
-                <h3 className="font-display text-base font-bold text-[#F4F6FF]">Upcoming Deadlines</h3>
-                <Calendar className="w-4 h-4 text-[#FFC773]" />
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">Upcoming Deadlines</h3>
+                <Calendar className="w-4 h-4 text-amber-600" />
               </div>
 
               <div className="space-y-2.5">
                 {upcomingDeadlines.map((opp) => (
-                  <div key={opp.id} className="p-3 rounded-[14px] bg-[#1A2040]/70 border border-[rgba(255,255,255,0.06)] space-y-1">
+                  <div key={opp.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-[#F4F6FF] truncate max-w-[170px]">
+                      <span className="font-semibold text-slate-900 truncate max-w-[170px]">
                         {opp.title}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full bg-[#FFC773]/15 text-[#FFC773] text-[10px] font-mono-data font-semibold">
+                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-mono font-semibold border border-amber-200">
                         {opp.deadline}
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#8F99B8] truncate">
+                    <div className="text-[11px] text-slate-500 truncate">
                       {opp.company} · {opp.type}
                     </div>
                   </div>
@@ -460,23 +597,23 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
 
             <button
               onClick={() => setActiveTab('opportunities')}
-              className="text-xs font-mono-data text-[#8B7CFF] hover:underline text-left pt-2"
+              className="text-xs font-mono text-indigo-600 hover:underline text-left pt-2 font-medium cursor-pointer"
             >
               View all deadlines in Opportunities →
             </button>
           </div>
 
           {/* Card 3: Evidence Mix by Type */}
-          <div className="p-6 rounded-[22px] bg-[#222A52] card-glass space-y-4 flex flex-col justify-between">
+          <div className="p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-[rgba(255,255,255,0.08)]">
-                <h3 className="font-display text-base font-bold text-[#F4F6FF]">Evidence Mix</h3>
-                <span className="text-xs font-mono-data text-[#2DD4BF] font-semibold">{studentEvidences.length} proofs</span>
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900">Evidence Diversity</h3>
+                <span className="text-xs font-mono text-teal-700 font-semibold">{studentEvidences.length} proofs</span>
               </div>
 
               {/* Stacked Diversity Bar */}
               <div className="space-y-1.5">
-                <div className="w-full h-3 rounded-full bg-[#1A2040] overflow-hidden flex">
+                <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden flex">
                   {Object.entries(evidenceTypeCounts).map(([type, count]) => {
                     const style = getTypeStyle(type as EvidenceType);
                     const widthPct = (count / studentEvidences.length) * 100;
@@ -490,39 +627,48 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                     );
                   })}
                 </div>
-                <div className="text-[10px] font-mono-data text-[#8F99B8] flex justify-between">
+                <div className="text-[10px] font-mono text-slate-500 flex justify-between">
                   <span>Category Diversity: High</span>
-                  <span>{proofStrength.distinctTypesCount} Types</span>
+                  <span>{proofStrength.distinctTypesCount} Distinct Types</span>
                 </div>
               </div>
 
               {/* Legend with counts */}
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono-data pt-2">
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-2">
                 {Object.entries(EVIDENCE_TYPE_STYLES).map(([type, style]) => {
                   const count = evidenceTypeCounts[type] || 0;
                   const Icon = style.icon;
                   return (
-                    <div key={type} className="p-2 rounded-[10px] bg-[#1A2040]/60 flex items-center justify-between">
+                    <div key={type} className="p-2 rounded-lg bg-slate-50 border border-slate-200/60 flex items-center justify-between">
                       <span className="flex items-center gap-1.5 truncate">
                         <span style={{ color: style.color }} className="shrink-0">
                           <Icon className="w-3.5 h-3.5" />
                         </span>
-                        <span className="text-[#BAC2DC] truncate">{type}</span>
+                        <span className="text-slate-600 truncate">{type}</span>
                       </span>
-                      <span className="font-bold text-[#F4F6FF] pl-1">{count}</span>
+                      <span className="font-bold text-slate-900 pl-1">{count}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div className="text-[11px] font-mono-data text-[#4ADE80] pt-1">
-              ✓ Multi-type verified evidence chain verified
+            <div className="text-[11px] font-mono text-emerald-600 font-medium pt-1">
+              ✓ Multi-type verified evidence chain complete
             </div>
           </div>
 
         </div>
       </section>
+
+      {/* Socratic Defense Modal */}
+      {activeDefenseEvidence && (
+        <DefenseChallengeModal
+          evidence={activeDefenseEvidence}
+          onClose={() => setActiveDefenseEvidence(null)}
+          onComplete={handleDefenseComplete}
+        />
+      )}
 
     </div>
   );

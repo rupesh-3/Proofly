@@ -26,49 +26,49 @@ export interface EvidenceTypeStyle {
 export const EVIDENCE_TYPE_STYLES: Record<string, EvidenceTypeStyle> = {
   Project: {
     type: 'Project',
-    color: '#8B7CFF',
-    bgColor: '#8B7CFF18',
-    borderColor: '#8B7CFF35',
+    color: '#3730A3', // indigo-800
+    bgColor: '#EEF2FF', // indigo-50
+    borderColor: '#C7D2FE', // indigo-200
     icon: FolderPlus,
     label: 'Project'
   },
   Hackathon: {
     type: 'Hackathon',
-    color: '#FB923C',
-    bgColor: '#FB923C18',
-    borderColor: '#FB923C35',
+    color: '#92400E', // amber-800
+    bgColor: '#FEF3C7', // amber-50
+    borderColor: '#FDE68A', // amber-200
     icon: Sparkles,
     label: 'Hackathon'
   },
   Internship: {
     type: 'Internship',
-    color: '#2DD4BF',
-    bgColor: '#2DD4BF18',
-    borderColor: '#2DD4BF35',
+    color: '#115E59', // teal-800
+    bgColor: '#F0FDFA', // teal-50
+    borderColor: '#99F6E4', // teal-200
     icon: Briefcase,
     label: 'Internship'
   },
   Certificate: {
     type: 'Certificate',
-    color: '#38BDF8',
-    bgColor: '#38BDF818',
-    borderColor: '#38BDF835',
+    color: '#075985', // sky-800
+    bgColor: '#F0F9FF', // sky-50
+    borderColor: '#BAE6FD', // sky-200
     icon: FileCheck,
     label: 'Certificate'
   },
   Competition: {
     type: 'Competition',
-    color: '#F472B6',
-    bgColor: '#F472B618',
-    borderColor: '#F472B635',
+    color: '#6B21A8', // purple-800
+    bgColor: '#FAF5FF', // purple-50
+    borderColor: '#E9D5FF', // purple-200
     icon: Trophy,
     label: 'Competition'
   },
   Achievement: {
     type: 'Achievement',
-    color: '#FFC773',
-    bgColor: '#FFC77318',
-    borderColor: '#FFC77335',
+    color: '#78350F', // warm-800
+    bgColor: '#FFFBEB', // warm-50
+    borderColor: '#FDE68A', // warm-200
     icon: Award,
     label: 'Achievement'
   }
@@ -83,10 +83,10 @@ export const LevelMeter: React.FC<{ level: 'Beginner' | 'Intermediate' | 'Advanc
   const activeSegments = level === 'Beginner' ? 1 : level === 'Intermediate' ? 2 : 3;
   return (
     <div className="flex items-center gap-1.5" title={`Skill Level: ${level}`}>
-      <div className={`w-3.5 h-1.5 rounded-full transition-colors ${activeSegments >= 1 ? 'bg-[#8B7CFF]' : 'bg-[#1A2040]'}`} />
-      <div className={`w-3.5 h-1.5 rounded-full transition-colors ${activeSegments >= 2 ? 'bg-[#8B7CFF]' : 'bg-[#1A2040]'}`} />
-      <div className={`w-3.5 h-1.5 rounded-full transition-colors ${activeSegments >= 3 ? 'bg-[#8B7CFF]' : 'bg-[#1A2040]'}`} />
-      <span className="text-[10px] font-mono-data text-[#8F99B8] ml-1">{level}</span>
+      <div className={`w-3.5 h-1.5 rounded-full transition-colors ${activeSegments >= 1 ? 'bg-slate-900' : 'bg-slate-200'}`} />
+      <div className={`w-3.5 h-1.5 rounded-full transition-colors ${activeSegments >= 2 ? 'bg-slate-900' : 'bg-slate-200'}`} />
+      <div className={`w-3.5 h-1.5 rounded-full transition-colors ${activeSegments >= 3 ? 'bg-slate-900' : 'bg-slate-200'}`} />
+      <span className="text-[10px] font-mono-data text-slate-500 ml-1">{level}</span>
     </div>
   );
 };
@@ -96,13 +96,13 @@ export const StatusIndicator: React.FC<{ status: 'verified' | 'pending' | 'rejec
   const getStatusConfig = (st: string) => {
     switch (st) {
       case 'verified':
-        return { color: '#4ADE80', bg: '#4ADE8018', border: '#4ADE8035', icon: CheckCircle2, label: 'Verified' };
+        return { color: '#065F46', bg: '#ECFDF5', border: '#A7F3D0', icon: CheckCircle2, label: 'Verified' };
       case 'pending':
-        return { color: '#FFC773', bg: '#FFC77318', border: '#FFC77335', icon: Clock, label: 'Pending' };
+        return { color: '#92400E', bg: '#FFFBEB', border: '#FDE68A', icon: Clock, label: 'Pending Review' };
       case 'rejected':
-        return { color: '#FB7185', bg: '#FB718518', border: '#FB718535', icon: AlertTriangle, label: 'Rejected' };
+        return { color: '#9F1239', bg: '#FFF1F2', border: '#FECDD3', icon: AlertTriangle, label: 'Needs Revision' };
       default:
-        return { color: '#8F99B8', bg: '#8F99B818', border: '#8F99B835', icon: HelpCircle, label: 'Self-Reported' };
+        return { color: '#475569', bg: '#F1F5F9', border: '#CBD5E1', icon: HelpCircle, label: 'Self-Reported' };
     }
   };
 
@@ -124,7 +124,7 @@ export const ScoreRing: React.FC<{ score: number; size?: number; strokeWidth?: n
   score, 
   size = 52, 
   strokeWidth = 4, 
-  color = '#8B7CFF' 
+  color = '#2563EB' 
 }) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -138,7 +138,7 @@ export const ScoreRing: React.FC<{ score: number; size?: number; strokeWidth?: n
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="rgba(255,255,255,0.08)"
+          stroke="#E2E8F0"
           strokeWidth={strokeWidth}
           fill="none"
         />
@@ -155,26 +155,28 @@ export const ScoreRing: React.FC<{ score: number; size?: number; strokeWidth?: n
           className="transition-all duration-700 ease-out"
         />
       </svg>
-      <span className="absolute font-mono-data font-bold text-xs" style={{ color }}>
+      <span className="absolute font-mono-data font-bold text-xs text-slate-800">
         {Math.round(score)}
       </span>
     </div>
   );
 };
 
-// 4. Trend Sparkline (SVG)
-export const TrendSparkline: React.FC<{ data?: number[]; color?: string; width?: number; height?: number }> = ({
-  data = [50, 58, 62, 65, 74, 80, 86],
-  color = '#4ADE80',
-  width = 90,
-  height = 24
+// 4. Trend Sparkline
+export const TrendSparkline: React.FC<{ data: number[]; width?: number; height?: number; color?: string }> = ({
+  data,
+  width = 72,
+  height = 24,
+  color = '#2563EB'
 }) => {
+  if (data.length < 2) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  
+  const stepX = width / (data.length - 1);
+
   const points = data.map((val, idx) => {
-    const x = (idx / (data.length - 1)) * width;
+    const x = idx * stepX;
     const y = height - ((val - min) / range) * (height - 6) - 3;
     return `${x},${y}`;
   }).join(' ');
@@ -193,47 +195,36 @@ export const TrendSparkline: React.FC<{ data?: number[]; color?: string; width?:
   );
 };
 
-// 5. Evidence Legend
-export const EvidenceLegend: React.FC = () => {
+// 5. Company Avatar
+export const CompanyAvatar: React.FC<{ name: string; size?: number }> = ({ name, size = 36 }) => {
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
+
   return (
-    <div className="flex flex-wrap items-center gap-3 text-xs font-mono-data text-[#8F99B8]">
-      <span className="text-[11px] uppercase tracking-wider text-[#8F99B8]">Evidence Types:</span>
-      {Object.values(EVIDENCE_TYPE_STYLES).map(style => {
-        const Icon = style.icon;
-        return (
-          <span 
-            key={style.type} 
-            className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md"
-            style={{ backgroundColor: style.bgColor, color: style.color, border: `1px solid ${style.borderColor}` }}
-          >
-            <Icon className="w-3 h-3" />
-            <span>{style.label}</span>
-          </span>
-        );
-      })}
+    <div 
+      className="rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs font-mono-data shrink-0"
+      style={{ width: size, height: size }}
+      title={name}
+    >
+      {initials || 'CO'}
     </div>
   );
 };
 
-// 6. Company Avatar with Fallback
-export const CompanyAvatar: React.FC<{ name: string; logoUrl?: string; size?: number }> = ({ name, logoUrl, size = 36 }) => {
-  if (logoUrl) {
-    return (
-      <img 
-        src={logoUrl} 
-        alt={name} 
-        className="rounded-lg object-cover bg-[#1A2040]" 
-        style={{ width: size, height: size }} 
-      />
-    );
-  }
-  const initials = name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+// 6. Evidence Legend
+export const EvidenceLegend: React.FC = () => {
   return (
-    <div 
-      className="rounded-lg bg-gradient-to-br from-[#8B7CFF] to-[#2DD4BF] text-white font-mono-data font-bold flex items-center justify-center text-xs shadow-sm"
-      style={{ width: size, height: size }}
-    >
-      {initials}
+    <div className="flex flex-wrap items-center gap-3 text-xs font-mono">
+      {Object.values(EVIDENCE_TYPE_STYLES).map(st => (
+        <span key={st.type} className="inline-flex items-center gap-1.5 text-slate-600">
+          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: st.color }} />
+          <span>{st.label}</span>
+        </span>
+      ))}
     </div>
   );
 };

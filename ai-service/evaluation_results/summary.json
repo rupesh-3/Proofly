@@ -1,0 +1,19 @@
+{
+  "protocol": "Zero-Trust Proof-of-Competency (ZT-PoC)",
+  "genuine_cohort_size": 50,
+  "synthetic_cohort_size": 50,
+  "combined_auc": 1.0,
+  "optimal_threshold": 20,
+  "optimal_f1": 1.0,
+  "optimal_accuracy": 1.0,
+  "optimal_precision": 1.0,
+  "optimal_recall": 1.0,
+  "asi_only_auc": 1.0,
+  "telemetry_only_auc": 1.0,
+  "combined_auc_ablation": 1.0,
+  "mean_genuine_combined_score": 77.03,
+  "mean_synthetic_combined_score": 1.91,
+  "mean_genuine_latency_s": 39.8,
+  "mean_synthetic_latency_s": 20.11,
+  "faculty_review_time_reduction_estimate": "85-90%"
+}

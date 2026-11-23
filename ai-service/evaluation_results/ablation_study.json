@@ -1,0 +1,23 @@
+{
+  "asi_only": {
+    "auc": 1.0,
+    "accuracy": 1.0,
+    "f1_score": 1.0,
+    "mean_genuine_score": 89.65,
+    "mean_synthetic_score": 6.88
+  },
+  "telemetry_only": {
+    "auc": 1.0,
+    "accuracy": 1.0,
+    "f1_score": 1.0,
+    "mean_genuine_score": 81.02,
+    "mean_synthetic_score": 27.03
+  },
+  "combined": {
+    "auc": 1.0,
+    "accuracy": 0.99,
+    "f1_score": 0.9899,
+    "mean_genuine_score": 77.01,
+    "mean_synthetic_score": 1.94
+  }
+}

@@ -53,12 +53,12 @@ export const SkillsExplorer: React.FC = () => {
     if (!selectedSkill) return [];
     return studentEvidences
       .filter(e => e.skillsTagged.some(st => normalizeSkillName(st).canonical.toLowerCase() === selectedSkill.canonicalName.toLowerCase()))
-      .sort((a, b) => a.date.localeCompare(b.date)); // Date order
+      .sort((a, b) => a.date.localeCompare(b.date));
   }, [selectedSkill, studentEvidences]);
 
   // Exact mathematical breakdown
   const breakdown = useMemo(() => {
-    if (!selectedSkill) return { items: [], confidence: 0, level: 'Beginner' };
+    if (!selectedSkill) return { items: [], confidence: 0, level: 'Beginner', totalRawPoints: 0 };
     return calculateSkillConfidence(selectedSkill.canonicalName, studentEvidences);
   }, [selectedSkill, studentEvidences]);
 
@@ -88,21 +88,21 @@ export const SkillsExplorer: React.FC = () => {
   };
 
   return (
-    <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 text-left animate-in fade-in duration-200">
+    <div className="py-8 sm:py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8 text-left animate-in fade-in duration-200 bg-slate-50 min-h-screen">
       
       {/* Header & Main Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#F4F6FF] tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
             Skills & Evidence Architecture
           </h1>
-          <p className="text-xs sm:text-sm text-[#BAC2DC] mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
             Every confidence score (0-100) is deterministically verified from underlying engineering artifacts.
           </p>
         </div>
 
-        {/* 3 Main View Tabs: Overview | Evidence Explorer | Compare */}
-        <div className="flex p-1 rounded-full bg-[#1A2040] border border-[rgba(255,255,255,0.08)] self-start sm:self-auto">
+        {/* 3 Main View Tabs */}
+        <div className="flex p-1 rounded-xl bg-slate-200/80 border border-slate-300/70 self-start sm:self-auto">
           {[
             { id: 'overview', label: 'Overview' },
             { id: 'explorer', label: 'Evidence Explorer' },
@@ -111,10 +111,10 @@ export const SkillsExplorer: React.FC = () => {
             <button
               key={t.id}
               onClick={() => setActiveViewTab(t.id as any)}
-              className={`px-4 py-1.5 rounded-full text-xs font-mono-data transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
                 activeViewTab === t.id
-                  ? 'bg-gradient-to-r from-[#8B7CFF] to-[#2DD4BF] text-white font-semibold shadow-sm'
-                  : 'text-[#BAC2DC] hover:text-[#F4F6FF]'
+                  ? 'bg-white text-slate-900 shadow-xs font-semibold'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               {t.label}
@@ -124,7 +124,7 @@ export const SkillsExplorer: React.FC = () => {
       </div>
 
       {/* ================================================================ */}
-      {/* VIEW 1: OVERVIEW (Skill Cards Grid + Labeled Radar) */}
+      {/* VIEW 1: OVERVIEW */}
       {/* ================================================================ */}
       {activeViewTab === 'overview' && (
         <div className="space-y-6 animate-in fade-in duration-200">
@@ -134,7 +134,7 @@ export const SkillsExplorer: React.FC = () => {
             {/* Grid of Skill Cards (Col 8 on lg) */}
             <div className="lg:col-span-8 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono-data uppercase text-[#8F99B8]">
+                <span className="text-xs font-mono uppercase text-slate-500 font-semibold">
                   Mapped Skills ({studentSkills.length})
                 </span>
                 <EvidenceLegend />
@@ -155,25 +155,25 @@ export const SkillsExplorer: React.FC = () => {
                         setSelectedSkillId(skill.id);
                         setActiveViewTab('explorer');
                       }}
-                      className="p-5 rounded-[20px] bg-[#222A52] card-glass hover:border-[#8B7CFF]/50 cursor-pointer transition-all shadow-sm space-y-3 group"
+                      className="p-5 rounded-2xl bg-white border border-slate-200/90 hover:border-indigo-400 hover:shadow-md cursor-pointer transition-all shadow-xs space-y-3 group"
                     >
                       <div className="flex items-start justify-between">
                         <div>
-                          <div className="text-[10px] font-mono-data text-[#8F99B8] uppercase">{skill.category}</div>
-                          <h3 className="font-display text-base font-bold text-[#F4F6FF] group-hover:text-[#8B7CFF] transition-colors">
+                          <div className="text-[10px] font-mono text-slate-400 uppercase font-semibold">{skill.category}</div>
+                          <h3 className="text-base font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
                             {skill.canonicalName}
                           </h3>
                         </div>
-                        <ScoreRing score={skill.confidence} size={46} strokeWidth={4} color="#8B7CFF" />
+                        <ScoreRing score={skill.confidence} size={46} strokeWidth={4} color="#4F46E5" />
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
                         <LevelMeter level={skill.level} />
-                        <span className="text-xs font-mono-data text-[#8F99B8]">{proofs.length} proofs</span>
+                        <span className="text-xs font-mono text-slate-500">{proofs.length} proofs</span>
                       </div>
 
                       {/* Evidence Type Colored Dots + Status */}
-                      <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-xs font-mono-data">
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
                         <div className="flex items-center gap-1.5">
                           {distinctTypes.map(t => {
                             const style = getTypeStyle(t);
@@ -197,13 +197,13 @@ export const SkillsExplorer: React.FC = () => {
             </div>
 
             {/* Radar Card with Labeled Axes (Col 4 on lg) */}
-            <div className="lg:col-span-4 p-6 rounded-[22px] bg-[#222A52] card-glass space-y-5 sticky top-24">
+            <div className="lg:col-span-4 p-6 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-5 sticky top-24">
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display text-base font-bold text-[#F4F6FF]">Skills Radar</h3>
-                  <span className="text-xs font-mono-data text-[#2DD4BF]">Audited</span>
+                  <h3 className="text-base font-bold text-slate-900">Skills Radar</h3>
+                  <span className="text-xs font-mono text-indigo-600 font-semibold">Audited</span>
                 </div>
-                <p className="text-xs text-[#BAC2DC]">Multi-axis certified confidence mapping.</p>
+                <p className="text-xs text-slate-500">Multi-axis certified confidence mapping.</p>
               </div>
 
               {/* Responsive SVG Radar */}
@@ -221,7 +221,7 @@ export const SkillsExplorer: React.FC = () => {
                         key={i}
                         points={points}
                         fill="none"
-                        stroke="rgba(255, 255, 255, 0.10)"
+                        stroke="#E2E8F0"
                         strokeWidth="1"
                       />
                     );
@@ -237,7 +237,7 @@ export const SkillsExplorer: React.FC = () => {
                         y1="130"
                         x2={130 + 80 * Math.cos(angle)}
                         y2={130 + 80 * Math.sin(angle)}
-                        stroke="rgba(255, 255, 255, 0.10)"
+                        stroke="#E2E8F0"
                         strokeWidth="1"
                       />
                     );
@@ -256,8 +256,8 @@ export const SkillsExplorer: React.FC = () => {
                       <>
                         <polygon
                           points={points}
-                          fill="rgba(139, 124, 255, 0.28)"
-                          stroke="#2DD4BF"
+                          fill="rgba(79, 70, 229, 0.12)"
+                          stroke="#4F46E5"
                           strokeWidth="2"
                         />
                         {top6.map((s, idx) => {
@@ -271,7 +271,7 @@ export const SkillsExplorer: React.FC = () => {
                               x={lx}
                               y={ly + 4}
                               textAnchor="middle"
-                              className="fill-[#BAC2DC] text-[10px] font-mono-data font-semibold"
+                              className="fill-slate-600 text-[10px] font-mono font-medium"
                             >
                               {s.canonicalName.slice(0, 8)}
                             </text>
@@ -283,7 +283,7 @@ export const SkillsExplorer: React.FC = () => {
                 </svg>
               </div>
 
-              <div className="p-3 rounded-[12px] bg-[#1A2040]/70 text-[11px] font-mono-data text-[#8F99B8] text-center">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] font-mono text-slate-500 text-center">
                 Radar nodes match certified 0-100 scores.
               </div>
             </div>
@@ -294,24 +294,24 @@ export const SkillsExplorer: React.FC = () => {
       )}
 
       {/* ================================================================ */}
-      {/* VIEW 2: EVIDENCE EXPLORER (Left List + Right Sticky Detail Panel) */}
+      {/* VIEW 2: EVIDENCE EXPLORER */}
       {/* ================================================================ */}
       {activeViewTab === 'explorer' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-in fade-in duration-200">
           
-          {/* Left Panel: Skill List (Col 5 on lg) */}
-          <div className="lg:col-span-5 p-5 rounded-[22px] bg-[#222A52] card-glass space-y-4">
+          {/* Left Panel: Skill List */}
+          <div className="lg:col-span-5 p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-4">
             
             {/* Search and Category filter */}
             <div className="space-y-2.5">
               <div className="relative">
-                <Search className="w-4 h-4 text-[#8F99B8] absolute left-3 top-2.5" />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Filter skills..."
-                  className="w-full pl-9 pr-3 py-1.5 rounded-full bg-[#1A2040] border border-[rgba(255,255,255,0.10)] text-xs text-[#F4F6FF] focus:outline-none focus:border-[#8B7CFF]"
+                  className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -320,10 +320,10 @@ export const SkillsExplorer: React.FC = () => {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono-data transition-colors ${
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-mono transition-colors cursor-pointer ${
                       selectedCategory === cat
-                        ? 'bg-[#8B7CFF] text-white font-semibold'
-                        : 'bg-[#1A2040] text-[#8F99B8] hover:text-[#F4F6FF]'
+                        ? 'bg-indigo-600 text-white font-semibold'
+                        : 'bg-slate-100 text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     {cat}
@@ -345,23 +345,23 @@ export const SkillsExplorer: React.FC = () => {
                   <div
                     key={s.id}
                     onClick={() => setSelectedSkillId(s.id)}
-                    className={`p-3.5 rounded-[16px] border transition-all cursor-pointer text-left space-y-2 ${
+                    className={`p-3.5 rounded-xl border transition-all cursor-pointer text-left space-y-2 ${
                       isSelected
-                        ? 'bg-[#2B3563] border-[#8B7CFF] shadow-md'
-                        : 'bg-[#1A2040]/70 border-[rgba(255,255,255,0.06)] hover:border-[rgba(255,255,255,0.14)]'
+                        ? 'bg-indigo-50/70 border-indigo-400 shadow-xs'
+                        : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-xs text-[#F4F6FF]">{s.canonicalName}</span>
+                        <span className="font-semibold text-xs text-slate-900">{s.canonicalName}</span>
                         <LevelMeter level={s.level} />
                       </div>
                       <StatusIndicator status={isVerified ? 'verified' : 'pending'} />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-mono-data">
-                      <span className="text-[#8F99B8]">{proofs.length} proofs</span>
-                      <span className="font-bold text-[#FFC773]">{s.confidence}/100</span>
+                    <div className="flex items-center justify-between text-[11px] font-mono">
+                      <span className="text-slate-500">{proofs.length} proofs</span>
+                      <span className="font-bold text-indigo-600">{s.confidence}/100</span>
                     </div>
                   </div>
                 );
@@ -370,32 +370,32 @@ export const SkillsExplorer: React.FC = () => {
 
           </div>
 
-          {/* Right Sticky Detail Panel (Col 7 on lg) */}
-          <div className="lg:col-span-7 p-6 sm:p-7 rounded-[22px] bg-[#222A52] card-glass space-y-6 sticky top-24">
+          {/* Right Sticky Detail Panel */}
+          <div className="lg:col-span-7 p-6 sm:p-7 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-6 sticky top-24">
             {selectedSkill && (
               <>
                 {/* Header with Ring & Summary */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[rgba(255,255,255,0.10)]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <h2 className="font-display text-2xl font-bold text-[#F4F6FF]">
+                      <h2 className="text-2xl font-bold text-slate-900">
                         {selectedSkill.canonicalName}
                       </h2>
                       <LevelMeter level={selectedSkill.level} />
                     </div>
-                    <p className="text-xs text-[#BAC2DC]">
+                    <p className="text-xs text-slate-500">
                       Backed by {selectedSkillEvidences.length} proofs across diverse evidence categories.
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 shrink-0">
-                    <ScoreRing score={selectedSkill.confidence} size={58} strokeWidth={5} color="#FFC773" />
+                    <ScoreRing score={selectedSkill.confidence} size={58} strokeWidth={5} color="#4F46E5" />
                   </div>
                 </div>
 
-                {/* Evidence Chain: Horizontal stepper in date order */}
+                {/* Evidence Chain */}
                 <div className="space-y-3">
-                  <div className="text-xs font-mono-data uppercase text-[#8F99B8]">
+                  <div className="text-xs font-mono uppercase text-slate-500 font-semibold">
                     Evidence Chain (Date Order)
                   </div>
 
@@ -407,23 +407,23 @@ export const SkillsExplorer: React.FC = () => {
                       return (
                         <div
                           key={ev.id}
-                          className="p-3.5 rounded-[14px] bg-[#1A2040] border border-[rgba(255,255,255,0.06)] space-y-2 text-left"
+                          className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-left"
                         >
-                          <div className="flex items-center justify-between text-xs font-mono-data">
+                          <div className="flex items-center justify-between text-xs font-mono">
                             <span className="flex items-center gap-1.5 font-semibold" style={{ color: style.color }}>
                               <Icon className="w-3.5 h-3.5" />
                               <span>{ev.type}</span>
                             </span>
-                            <span className="text-[10px] text-[#8F99B8]">{ev.date}</span>
+                            <span className="text-[10px] text-slate-400">{ev.date}</span>
                           </div>
 
-                          <div className="font-semibold text-xs text-[#F4F6FF] line-clamp-1">{ev.title}</div>
-                          {ev.metrics && <div className="text-[11px] text-[#4ADE80] font-mono-data truncate">{ev.metrics}</div>}
+                          <div className="font-semibold text-xs text-slate-900 line-clamp-1">{ev.title}</div>
+                          {ev.metrics && <div className="text-[11px] text-emerald-700 font-mono truncate">{ev.metrics}</div>}
 
-                          <div className="pt-2 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between text-[11px] font-mono-data">
-                            <span className="text-[#8F99B8] truncate max-w-[140px]">{ev.verifiedBy || 'Pending'}</span>
+                          <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] font-mono">
+                            <span className="text-slate-500 truncate max-w-[140px]">{ev.verifiedBy || 'Pending'}</span>
                             {ev.url && (
-                              <a href={ev.url} target="_blank" rel="noreferrer" className="text-[#38BDF8] hover:underline flex items-center gap-1">
+                              <a href={ev.url} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline flex items-center gap-1 font-semibold">
                                 <span>Proof</span>
                                 <ExternalLink className="w-3 h-3" />
                               </a>
@@ -438,35 +438,35 @@ export const SkillsExplorer: React.FC = () => {
                 {/* Score Breakdown Table */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono-data uppercase text-[#8F99B8]">Mathematical Score Breakdown</span>
-                    <span className="text-xs font-mono-data text-[#4ADE80]">Σ Net = {selectedSkill.confidence} pts</span>
+                    <span className="text-xs font-mono uppercase text-slate-500 font-semibold">Mathematical Score Breakdown</span>
+                    <span className="text-xs font-mono text-emerald-600 font-bold">Σ Net = {selectedSkill.confidence} pts</span>
                   </div>
 
-                  <div className="overflow-x-auto rounded-[12px] border border-[rgba(255,255,255,0.08)] bg-[#1A2040]">
-                    <table className="w-full text-left text-xs font-mono-data">
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                    <table className="w-full text-left text-xs font-mono">
                       <thead>
-                        <tr className="border-b border-[rgba(255,255,255,0.08)] text-[#8F99B8] text-[11px] bg-[#222A52]">
+                        <tr className="border-b border-slate-200 text-slate-500 text-[11px] bg-slate-50 font-semibold">
                           <th className="py-2.5 px-3">Evidence Item</th>
                           <th className="py-2.5 px-2">Type</th>
                           <th className="py-2.5 px-2 text-right">Weight</th>
                           <th className="py-2.5 px-2 text-right">Verif.</th>
                           <th className="py-2.5 px-2 text-right">Recency</th>
-                          <th className="py-2.5 px-3 text-right text-[#FFC773]">Points</th>
+                          <th className="py-2.5 px-3 text-right text-indigo-600 font-bold">Points</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-[#BAC2DC]">
+                      <tbody className="divide-y divide-slate-100 text-slate-600">
                         {breakdown.items.map((item, idx) => {
                           const ev = studentEvidences.find(e => e.id === item.evidenceId);
                           return (
-                            <tr key={idx} className="hover:bg-[#222A52]/30">
-                              <td className="py-2 px-3 text-[#F4F6FF] font-medium truncate max-w-[170px]">
+                            <tr key={idx} className="hover:bg-slate-50/60">
+                              <td className="py-2 px-3 text-slate-900 font-medium truncate max-w-[170px]">
                                 {ev?.title || 'Evidence Artifact'}
                               </td>
-                              <td className="py-2 px-2 text-[#8F99B8]">{item.type}</td>
+                              <td className="py-2 px-2 text-slate-500">{item.type}</td>
                               <td className="py-2 px-2 text-right">{item.typeWeight}</td>
                               <td className="py-2 px-2 text-right">{item.verificationFactor}x</td>
                               <td className="py-2 px-2 text-right">{item.recencyFactor}x</td>
-                              <td className="py-2 px-3 text-right font-bold text-[#4ADE80]">+{item.netScore}</td>
+                              <td className="py-2 px-3 text-right font-bold text-emerald-600">+{item.netScore}</td>
                             </tr>
                           );
                         })}
@@ -476,12 +476,12 @@ export const SkillsExplorer: React.FC = () => {
                 </div>
 
                 {/* How to Strengthen */}
-                <div className="p-4 rounded-[16px] bg-[#1A2040] border border-[rgba(255,255,255,0.08)] space-y-1">
-                  <div className="flex items-center gap-1.5 text-xs font-mono-data text-[#FFC773] font-semibold">
-                    <TrendingUp className="w-3.5 h-3.5" />
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-amber-800 font-bold">
+                    <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
                     <span>How to Strengthen This Skill</span>
                   </div>
-                  <p className="text-xs text-[#BAC2DC] leading-relaxed">
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     {selectedSkill.confidence < 70
                       ? `Complete and link a faculty-verified internship or research capstone demonstrating ${selectedSkill.canonicalName} to attain Advanced standing (70+).`
                       : `Maintain currency by attaching newly deployed benchmarks or renewing credential validation within 12 months.`}
@@ -495,25 +495,25 @@ export const SkillsExplorer: React.FC = () => {
       )}
 
       {/* ================================================================ */}
-      {/* VIEW 3: COMPARE MATRIX (Full Evidence Matrix) */}
+      {/* VIEW 3: COMPARE MATRIX */}
       {/* ================================================================ */}
       {activeViewTab === 'compare' && (
-        <div className="p-6 sm:p-8 rounded-[22px] bg-[#222A52] card-glass space-y-5 animate-in fade-in duration-200">
+        <div className="p-6 sm:p-8 rounded-2xl bg-white border border-slate-200/90 shadow-sm space-y-5 animate-in fade-in duration-200">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="font-display text-xl font-bold text-[#F4F6FF]">Evidence Matrix</h2>
-              <p className="text-xs text-[#BAC2DC]">
+              <h2 className="text-xl font-bold text-slate-900">Evidence Matrix</h2>
+              <p className="text-xs text-slate-500">
                 Cross-tabulation of student skills against validated proof categories. Click any cell to inspect in Evidence Explorer.
               </p>
             </div>
             <EvidenceLegend />
           </div>
 
-          <div className="overflow-x-auto rounded-[14px] border border-[rgba(255,255,255,0.08)] bg-[#1A2040]">
-            <table className="w-full text-left text-xs font-mono-data">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="border-b border-[rgba(255,255,255,0.08)] text-[#8F99B8] text-[11px] bg-[#222A52]">
-                  <th className="py-3 px-4 font-semibold">Skill</th>
+                <tr className="border-b border-slate-200 text-slate-500 text-[11px] bg-slate-50 font-semibold">
+                  <th className="py-3 px-4">Skill</th>
                   <th className="py-3 px-3 text-right">Confidence</th>
                   {matrixColumns.map(col => {
                     const style = getTypeStyle(col);
@@ -525,7 +525,7 @@ export const SkillsExplorer: React.FC = () => {
                   })}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[rgba(255,255,255,0.04)] text-[#BAC2DC]">
+              <tbody className="divide-y divide-slate-100 text-slate-700">
                 {studentSkills.map(s => {
                   const proofsForSkill = studentEvidences.filter(e =>
                     e.skillsTagged.some(st => normalizeSkillName(st).canonical.toLowerCase() === s.canonicalName.toLowerCase())
@@ -535,10 +535,10 @@ export const SkillsExplorer: React.FC = () => {
                     <tr
                       key={s.id}
                       onClick={() => handleSelectFromMatrix(s.id)}
-                      className="cursor-pointer hover:bg-[#222A52]/50 transition-colors"
+                      className="cursor-pointer hover:bg-slate-50 transition-colors"
                     >
-                      <td className="py-3 px-4 font-semibold text-[#F4F6FF]">{s.canonicalName}</td>
-                      <td className="py-3 px-3 text-right font-bold text-[#FFC773]">{s.confidence}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-900">{s.canonicalName}</td>
+                      <td className="py-3 px-3 text-right font-bold text-indigo-600">{s.confidence}</td>
                       {matrixColumns.map(col => {
                         const count = proofsForSkill.filter(e => e.type === col).length;
                         const style = getTypeStyle(col);
@@ -553,7 +553,7 @@ export const SkillsExplorer: React.FC = () => {
                                 ● {count}
                               </span>
                             ) : (
-                              <span className="text-[#8F99B8]/30">—</span>
+                              <span className="text-slate-300">—</span>
                             )}
                           </td>
                         );
@@ -563,11 +563,11 @@ export const SkillsExplorer: React.FC = () => {
                 })}
 
                 {/* Column Totals Row */}
-                <tr className="bg-[#222A52]/90 border-t border-[rgba(255,255,255,0.12)] font-bold text-[#F4F6FF]">
-                  <td className="py-3.5 px-4 text-[#8F99B8] uppercase text-[11px]">Category Totals</td>
-                  <td className="py-3.5 px-3 text-right text-[#FFC773]">{studentSkills.length} skills</td>
+                <tr className="bg-slate-50 border-t border-slate-200 font-bold text-slate-900">
+                  <td className="py-3.5 px-4 text-slate-500 uppercase text-[11px]">Category Totals</td>
+                  <td className="py-3.5 px-3 text-right text-indigo-600">{studentSkills.length} skills</td>
                   {matrixColumns.map(col => (
-                    <td key={col} className="py-3.5 px-3 text-center text-[#4ADE80]">
+                    <td key={col} className="py-3.5 px-3 text-center text-emerald-600">
                       {matrixColumnTotals[col]} proofs
                     </td>
                   ))}
