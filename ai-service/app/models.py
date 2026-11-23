@@ -77,6 +77,7 @@ class DefenseGenerateIn(BaseModel):
     description: str
     report_text: Optional[str] = None
     code_snippet: Optional[str] = None
+    repo_url: Optional[str] = None
     tech_stack: list[str] = Field(default_factory=list)
     claimed_skills: list[str] = Field(default_factory=list)
 

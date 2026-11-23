@@ -25,16 +25,14 @@ from typing import Optional
 import httpx
 from pydantic import BaseModel, Field
 
+from .gemini_client import call_gemini, call_gemini_json, get_gemini_api_key
+from .github_fetcher import fetch_github_repository, parse_github_url
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
-GEMINI_ENDPOINT = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}"
-    f":generateContent?key={GEMINI_API_KEY}"
-)
+GEMINI_API_KEY = get_gemini_api_key()
 
 # ---------------------------------------------------------------------------
 # Pydantic models for the ASI protocol
@@ -56,6 +54,10 @@ class ArtifactInput(BaseModel):
     code_snippet: Optional[str] = Field(
         default=None,
         description="Representative code snippet from the project (up to 4000 chars)"
+    )
+    repo_url: Optional[str] = Field(
+        default=None,
+        description="GitHub or source repository URL"
     )
     tech_stack: list[str] = Field(default_factory=list)
     claimed_skills: list[str] = Field(default_factory=list)
@@ -260,33 +262,13 @@ QUESTION_TEMPLATES["achievement"] = {
 # ---------------------------------------------------------------------------
 
 async def _call_gemini(system_prompt: str, user_prompt: str) -> str:
-    """Call Gemini 2.0 Flash and return the text response."""
-    if not GEMINI_API_KEY:
-        raise RuntimeError(
-            "GEMINI_API_KEY not configured. Set it in ai-service/.env"
-        )
-
-    payload = {
-        "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"parts": [{"text": user_prompt}]}],
-        "generationConfig": {
-            "temperature": 0.7,
-            "maxOutputTokens": 4096,
-            "responseMimeType": "application/json",
-        },
-    }
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(GEMINI_ENDPOINT, json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-
-    candidates = data.get("candidates", [])
-    if not candidates:
-        raise RuntimeError("No candidates returned from Gemini API")
-
-    text = candidates[0]["content"]["parts"][0]["text"]
-    return text
+    """Call Gemini using centralized client."""
+    return await call_gemini(
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
+        temperature=0.4,
+        response_mime_type="application/json",
+    )
 
 
 def _synthesize_domain_grounded_challenge(artifact: ArtifactInput, artifact_hash: str) -> list[DefenseQuestion]:
@@ -295,14 +277,60 @@ def _synthesize_domain_grounded_challenge(artifact: ArtifactInput, artifact_hash
     Generates rich, artifact-specific Socratic defense questions tailored to the
     student's actual technical stack, architecture, and project type.
     """
-    combined_text = f"{artifact.title} {artifact.description} {' '.join(artifact.tech_stack)} {' '.join(artifact.claimed_skills)}".lower()
+    combined_text = f"{artifact.title} {artifact.description} {' '.join(artifact.tech_stack)} {' '.join(artifact.claimed_skills)} {artifact.report_text or ''}".lower()
 
+    is_analytics = any(k in combined_text for k in [
+        "powerbi", "power bi", "tableau", "dax", "star schema", "data analytics",
+        "dashboard", "kpi", "fact table", "dimension table", "snowflake schema",
+        "business intelligence", "etl", "data warehouse", "data warehousing",
+        "vertipaq", "query folding", "measures", "looker", "metabase", "sql"
+    ])
     is_internship = artifact.evidence_type.lower() == "internship"
     is_ml = any(k in combined_text for k in ["pytorch", "tensorflow", "transformer", "deep learning", "neural", "vision", "nlp", "cuda", "embedding", "llm", "keras"])
     is_frontend = any(k in combined_text for k in ["react", "vue", "next.js", "frontend", "tailwind", "svelte", "javascript", "typescript", "html/css"])
     is_embedded = any(k in combined_text for k in ["iot", "embedded", "c++", "rust", "arduino", "rtos", "sensor", "firmware", "hardware", "microcontroller"])
 
-    if is_internship:
+    if is_analytics:
+        report_excerpt = f"Excerpt from submitted report: \"{artifact.report_text[:250]}...\"" if artifact.report_text else None
+        q1 = DefenseQuestion(
+            question_id=f"{artifact_hash}-q1",
+            question_type="tradeoff",
+            question_text=f"In your analytics work on '{artifact.title}', what specific architectural tradeoffs guided your schema design between a Star Schema and Snowflake schema, and how did you configure relationship cardinality (1-to-many vs many-to-many) and filter directions to ensure deterministic measure evaluations without cross-filtering loops?",
+            context_snippet=report_excerpt,
+            time_limit_seconds=90,
+            rubric={"conceptual_precision": 40, "technical_depth": 40, "response_authenticity": 20},
+            expected_key_concepts=["Star Schema", "relationship cardinality", "filter context", "dimension table", "bidirectional cross-filtering"]
+        )
+        q2 = DefenseQuestion(
+            question_id=f"{artifact_hash}-q2",
+            question_type="counterfactual",
+            question_text="Counterfactual Scenario: Suppose the source transactional dataset scales from 100K rows to 65M rows, causing dashboard visual load times to degrade to over 25 seconds. What architectural remediation strategies (e.g. Aggregation tables, DirectQuery with Query Folding, Incremental Refresh policies, VertiPaq column dictionary encoding) would you implement to restore sub-second rendering?",
+            context_snippet=None,
+            time_limit_seconds=90,
+            rubric={"conceptual_precision": 40, "technical_depth": 40, "response_authenticity": 20},
+            expected_key_concepts=["Incremental Refresh", "Aggregation tables", "Query Folding", "DirectQuery vs Import", "VertiPaq encoding"]
+        )
+        q3 = DefenseQuestion(
+            question_id=f"{artifact_hash}-q3",
+            question_type="debug",
+            question_text="Implementation Challenge: In the Power BI / DAX measure below, calculating cumulative Year-to-Date revenue incorrectly retains external visual filter context across monthly slicers. Fix the measure directly in the editor.",
+            context_snippet=f"""-- DAX / Power BI Measure Challenge
+-- Artifact: {artifact.title}
+-- BUG: The measure below incorrectly calculates cumulative revenue because it fails
+-- to override the visual row filter context using ALL() or DATESYTD() on DimDate.
+
+Total_YTD_Revenue = 
+CALCULATE(
+    SUM(FactSales[Revenue]),
+    -- FIX: Apply appropriate filter context modifier (e.g. FILTER(ALL(DimDate), DimDate[Date] <= MAX(DimDate[Date])))
+    DimDate[Date] <= MAX(DimDate[Date])
+)
+""",
+            time_limit_seconds=120,
+            rubric={"conceptual_precision": 30, "technical_depth": 50, "response_authenticity": 20},
+            expected_key_concepts=["CALCULATE", "filter context transition", "ALL or DATESYTD", "VertiPaq engine"]
+        )
+    elif is_internship:
         q1 = DefenseQuestion(
             question_id=f"{artifact_hash}-q1",
             question_type="tradeoff",
@@ -544,12 +572,44 @@ async def generate_defense_challenge(artifact: ArtifactInput) -> DefenseChalleng
     etype = artifact.evidence_type.lower()
     template = QUESTION_TEMPLATES.get(etype, QUESTION_TEMPLATES["achievement"])
 
+    # Check if a GitHub repository was provided
+    git_url = artifact.repo_url
+    if not git_url and "github.com" in (artifact.description or "").lower():
+        match = re.search(r"https?://github\.com/[^\s\)\>]+", artifact.description)
+        if match:
+            git_url = match.group(0)
+
+    repo_files_summary = []
+    repo_commits_summary = []
+    if git_url:
+        try:
+            repo_res = await fetch_github_repository(git_url, max_files=10)
+            if repo_res.get("success"):
+                if not artifact.code_snippet and repo_res.get("files"):
+                    for fp, fcontent in repo_res["files"].items():
+                        ext = os.path.splitext(fp)[1].lower()
+                        if ext in {".py", ".ts", ".tsx", ".js", ".sql", ".go", ".rs"}:
+                            artifact.code_snippet = f"// File from repo: {fp}\n" + fcontent[:2500]
+                            break
+                if repo_res.get("commits"):
+                    repo_commits_summary = [f"- {c['commit_hash']}: {c['message']}" for c in repo_res["commits"][:6]]
+                if repo_res.get("tree"):
+                    repo_files_summary = repo_res["tree"][:25]
+        except Exception as exc:
+            print(f"[generate_defense_challenge] GitHub fetch warning: {exc}")
+
     # Build the artifact context
     context_parts = [
         f"Title: {artifact.title}",
         f"Type: {artifact.evidence_type}",
         f"Description: {artifact.description}",
     ]
+    if git_url:
+        context_parts.append(f"Repository URL: {git_url}")
+    if repo_commits_summary:
+        context_parts.append("Recent Real Repository Commits:\n" + "\n".join(repo_commits_summary))
+    if repo_files_summary:
+        context_parts.append(f"Repository Structure ({len(repo_files_summary)} files sample):\n" + "\n".join(repo_files_summary))
     if artifact.tech_stack:
         context_parts.append(f"Technology Stack: {', '.join(artifact.tech_stack)}")
     if artifact.claimed_skills:
@@ -589,10 +649,9 @@ Respond with a JSON object matching this exact schema:
 }}"""
 
     parsed = None
-    if GEMINI_API_KEY:
+    if get_gemini_api_key():
         try:
-            raw_response = await _call_gemini(CHALLENGE_SYSTEM_PROMPT, user_prompt)
-            parsed = json.loads(raw_response)
+            parsed = await call_gemini_json(CHALLENGE_SYSTEM_PROMPT, user_prompt)
         except Exception as exc:
             print(f"[generate_defense_challenge] Gemini generation fallback to domain synthesis: {exc}")
 
@@ -873,9 +932,9 @@ Evaluate this response. Return a JSON object:
 }}"""
 
         try:
-            raw_eval = await _call_gemini(EVALUATION_SYSTEM_PROMPT, eval_prompt)
-            eval_data = json.loads(raw_eval)
-        except Exception:
+            eval_data = await call_gemini_json(EVALUATION_SYSTEM_PROMPT, eval_prompt)
+        except Exception as eval_exc:
+            print(f"[evaluate_defense_submission] Gemini evaluation fallback: {eval_exc}")
             # Fallback: intelligent semantic heuristic evaluation
             resp_lower = response.response_text.lower()
             words = resp_lower.split()

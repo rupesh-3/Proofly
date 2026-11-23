@@ -100,6 +100,9 @@ export interface Evidence {
   skillsTagged: string[];
   metrics?: string;
   organizationOrEvent?: string;
+  reportText?: string;
+  certificateFileName?: string;
+  certificateFileSize?: string;
   defenseScore?: number;
   defenseLevel?: 'Passed' | 'Marginal' | 'Failed';
   defenseTranscript?: DefenseTranscriptItem[];

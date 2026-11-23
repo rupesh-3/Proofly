@@ -37,41 +37,21 @@ from .irt_model import (
 )
 
 # ---------------------------------------------------------------------------
-# Gemini API Configuration
-# ---------------------------------------------------------------------------
-
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-GEMINI_MODEL = "gemini-2.0-flash"
-GEMINI_ENDPOINT = (
-    f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}"
-    f":generateContent?key={GEMINI_API_KEY}"
-)
-
+from .gemini_client import call_gemini_json, get_gemini_api_key
 
 async def _call_gemini_json(system_prompt: str, user_prompt: str) -> dict:
-    """Call Gemini with forced JSON output."""
-    if not GEMINI_API_KEY:
-        # Fallback offline deterministic generator
+    """Call Gemini with forced JSON output and graceful fallback."""
+    if not get_gemini_api_key():
         return _fallback_response(user_prompt)
 
-    payload = {
-        "system_instruction": {"parts": [{"text": system_prompt}]},
-        "contents": [{"parts": [{"text": user_prompt}]}],
-        "generationConfig": {
-            "temperature": 0.4,
-            "maxOutputTokens": 2048,
-            "responseMimeType": "application/json",
-        },
-    }
-
     try:
-        async with httpx.AsyncClient(timeout=25.0) as client:
-            resp = await client.post(GEMINI_ENDPOINT, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-            return json.loads(raw_text)
-    except Exception as e:
+        return await call_gemini_json(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            temperature=0.3,
+        )
+    except Exception as exc:
+        print(f"[adaptive_defense] Gemini call warning: {exc}, using fallback")
         return _fallback_response(user_prompt)
 
 

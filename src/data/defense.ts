@@ -152,6 +152,7 @@ export async function generateDefenseChallenge(input: {
   description: string;
   report_text?: string;
   code_snippet?: string;
+  repo_url?: string;
   tech_stack?: string[];
   claimed_skills?: string[];
 }): Promise<DefenseChallenge> {

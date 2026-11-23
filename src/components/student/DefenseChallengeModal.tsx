@@ -153,6 +153,8 @@ export const DefenseChallengeModal: React.FC<DefenseChallengeModalProps> = ({
         evidence_type: evidence.type,
         title: evidence.title,
         description: evidence.description,
+        report_text: evidence.reportText || evidence.description,
+        repo_url: evidence.githubUrl || evidence.gitlabUrl,
         tech_stack: evidence.skillsTagged,
         claimed_skills: evidence.skillsTagged,
       })
@@ -173,7 +175,8 @@ export const DefenseChallengeModal: React.FC<DefenseChallengeModalProps> = ({
   // High-fidelity domain-grounded fallback
   const fallbackChallenge: DefenseChallenge | null = React.useMemo(() => {
     if (!evidence) return null;
-    const text = `${evidence.title} ${evidence.description} ${(evidence.skillsTagged || []).join(' ')}`.toLowerCase();
+    const text = `${evidence.title} ${evidence.description} ${(evidence.skillsTagged || []).join(' ')} ${evidence.reportText || ''}`.toLowerCase();
+    const isAnalytics = text.includes('powerbi') || text.includes('power bi') || text.includes('tableau') || text.includes('dax') || text.includes('analytics') || text.includes('dashboard') || text.includes('kpi') || text.includes('star schema') || text.includes('sql') || text.includes('fact table');
     const isML = text.includes('pytorch') || text.includes('model') || text.includes('transformer') || text.includes('neural') || text.includes('deep learning');
     const isFrontend = text.includes('react') || text.includes('frontend') || text.includes('typescript') || text.includes('css') || text.includes('ui');
 
@@ -199,7 +202,21 @@ class StreamBuffer:
 `;
     let q3Concepts = ['bounded capacity', 'lock contention', 'buffer overflow'];
 
-    if (isML) {
+    if (isAnalytics) {
+      q3Snippet = `-- DAX / Power BI Measure Challenge
+-- Target: ${evidence.title}
+-- BUG: The measure below incorrectly calculates cumulative revenue because it fails
+-- to override the visual row filter context using ALL() or DATESYTD() on DimDate.
+
+Total_YTD_Revenue = 
+CALCULATE(
+    SUM(FactSales[Revenue]),
+    -- FIX: Apply appropriate filter context modifier (e.g. FILTER(ALL(DimDate), DimDate[Date] <= MAX(DimDate[Date])))
+    DimDate[Date] <= MAX(DimDate[Date])
+)
+`;
+      q3Concepts = ['CALCULATE', 'filter context', 'ALL', 'VertiPaq'];
+    } else if (isML) {
       q3Snippet = `import torch
 import torch.nn as nn
 
@@ -250,25 +267,47 @@ export function TelemetryStream({ streamUrl }) {
         {
           question_id: 'q-1',
           question_type: 'tradeoff' as const,
-          question_text: `In "${evidence.title}", what fundamental engineering or algorithmic tradeoff dictated your architectural decisions (e.g., latency vs. memory, synchronous vs. asynchronous)?`,
-          context_snippet: null,
+          question_text: isAnalytics
+            ? `In your analytics report for "${evidence.title}", what specific architectural tradeoffs guided your schema design between a Star Schema and Snowflake schema, and how did you configure relationship cardinality to ensure deterministic measure evaluations without cross-filtering loops?`
+            : isML
+            ? `In "${evidence.title}", what fundamental engineering or algorithmic tradeoff dictated your model architecture, precision strategy, and memory throughput vs. convergence rate?`
+            : isFrontend
+            ? `In "${evidence.title}", what architectural tradeoffs dictated your state management strategy, and how did you prevent unnecessary re-render cascades?`
+            : `In "${evidence.title}", what fundamental engineering or algorithmic tradeoff dictated your architectural decisions (e.g., latency vs. memory, synchronous vs. asynchronous)?`,
+          context_snippet: isAnalytics && evidence.reportText ? `Submitted Report Excerpt: "${evidence.reportText.slice(0, 260)}..."` : null,
           time_limit_seconds: 90,
           rubric: q1Rubric,
-          expected_key_concepts: isML ? ['activation memory', 'gradient accumulation', 'precision trade-off'] : isFrontend ? ['virtual DOM hydration', 're-render optimization', 'state atomicity'] : ['asynchronous queueing', 'memory footprint', 'latency SLA']
+          expected_key_concepts: isAnalytics
+            ? ['Star Schema', 'relationship cardinality', 'filter context', 'dimension table']
+            : isML
+            ? ['activation memory', 'gradient accumulation', 'precision trade-off']
+            : isFrontend
+            ? ['virtual DOM hydration', 're-render optimization', 'state atomicity']
+            : ['asynchronous queueing', 'memory footprint', 'latency SLA']
         },
         {
           question_id: 'q-2',
           question_type: 'counterfactual' as const,
-          question_text: `Counterfactual Scenario: Suppose the input workload throughput increases by 10x while available memory is halved. Where does your design fail first, and how would you adapt your synchronization or batching model?`,
+          question_text: isAnalytics
+            ? `Counterfactual Scenario: Suppose the source transactional dataset scales from 100K rows to 65M rows, causing dashboard visual load times to degrade to over 25 seconds. What remediation strategies (e.g. Aggregation tables, DirectQuery with Query Folding, Incremental Refresh policies, VertiPaq column dictionary encoding) would you implement to restore sub-second rendering?`
+            : `Counterfactual Scenario: Suppose the input workload throughput increases by 10x while available memory is halved. Where does your design fail first, and how would you adapt your synchronization or batching model?`,
           context_snippet: null,
           time_limit_seconds: 90,
           rubric: q2Rubric,
-          expected_key_concepts: isML ? ['FlashAttention', 'gradient checkpointing', 'OOM threshold'] : isFrontend ? ['AbortController', 'optimistic UI', 'stale-while-revalidate'] : ['backpressure', 'dynamic batching', 'OOM threshold']
+          expected_key_concepts: isAnalytics
+            ? ['Incremental Refresh', 'Aggregation tables', 'Query Folding', 'DirectQuery vs Import', 'VertiPaq encoding']
+            : isML
+            ? ['FlashAttention', 'gradient checkpointing', 'OOM threshold']
+            : isFrontend
+            ? ['AbortController', 'optimistic UI', 'stale-while-revalidate']
+            : ['backpressure', 'dynamic batching', 'OOM threshold']
         },
         {
           question_id: 'q-3',
           question_type: 'debug' as const,
-          question_text: `Live Implementation Challenge: The code snippet below contains a concurrency bottleneck and potential memory leak under high streaming frequency. Identify and resolve the issue directly in the IDE below.`,
+          question_text: isAnalytics
+            ? `Live Implementation Challenge: In the Power BI / DAX measure below, calculating cumulative Year-to-Date revenue incorrectly retains external visual filter context across monthly slicers. Fix the measure directly in the editor below.`
+            : `Live Implementation Challenge: The code snippet below contains a concurrency bottleneck and potential memory leak under high streaming frequency. Identify and resolve the issue directly in the IDE below.`,
           context_snippet: q3Snippet,
           time_limit_seconds: 120,
           rubric: q3Rubric,
@@ -318,8 +357,8 @@ export function TelemetryStream({ streamUrl }) {
   // Initialize Code in IDE when debug question appears
   useEffect(() => {
     if (currentQuestion && isDebugQuestion) {
-      const initialCode = currentQuestion.context_snippet || 
-`def resolve_concurrency(items):\n    # Fix synchronization leak below\n    lock = threading.Lock()\n    with lock:\n        process_batch(items)\n    return True`;
+      const initialCode = currentQuestion.context_snippet ||
+        `def resolve_concurrency(items):\n    # Fix synchronization leak below\n    lock = threading.Lock()\n    with lock:\n        process_batch(items)\n    return True`;
       setCodeEditorValue(initialCode);
       setTestRunStatus('idle');
       setTestOutput(null);
@@ -393,13 +432,14 @@ export function TelemetryStream({ streamUrl }) {
 
       // Check for bug fix signatures
       const fixedMl = code.includes('zero_grad');
-      const fixedQueue = (code.includes('capacity') || code.includes('size') || code.includes('count')) && 
-                         (code.includes('if len(') || code.includes('if self.count') || code.includes('overflow') || code.includes('raise') || code.includes('return') || code.includes('if count'));
+      const fixedQueue = (code.includes('capacity') || code.includes('size') || code.includes('count')) &&
+        (code.includes('if len(') || code.includes('if self.count') || code.includes('overflow') || code.includes('raise') || code.includes('return') || code.includes('if count'));
       const fixedAbort = code.includes('abort') || code.includes('abortcontroller') || code.includes('active = false');
       const fixedBackoff = code.includes('sleep') || code.includes('jitter') || code.includes('random');
+      const fixedDaxOrSql = code.includes('all(') || code.includes('datesytd') || code.includes('allexcept') || code.includes('rows between') || code.includes('range between') || code.includes('partition by');
       const hitsAnyExpected = concepts.some(c => code.includes(c) || c.split(' ').every(w => w.length > 2 && code.includes(w)));
 
-      const isFixValid = fixedMl || fixedQueue || fixedAbort || fixedBackoff || (hitsAnyExpected && code.length > 40);
+      const isFixValid = fixedMl || fixedQueue || fixedAbort || fixedBackoff || fixedDaxOrSql || (hitsAnyExpected && code.length > 35);
 
       if (isFixValid) {
         setTestRunStatus('passed');
@@ -599,7 +639,7 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
                 {resolvedChallenge.evidence_type} · {resolvedChallenge.title}
               </p>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Demonstrate genuine competency through an interactive 3-turn technical defense. 
+                Demonstrate genuine competency through an interactive 3-turn technical defense.
                 Questions probe your architectural decisions, trade-offs, and debugging capability.
               </p>
             </div>
@@ -633,11 +673,11 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
             {/* Accessibility Accommodation Options */}
             <div className="flex items-center justify-center gap-6 text-xs text-slate-600 max-w-md mx-auto pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  checked={timeExtensionGranted} 
+                <input
+                  type="checkbox"
+                  checked={timeExtensionGranted}
                   onChange={e => setTimeExtensionGranted(e.target.checked)}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-0" 
+                  className="rounded border-slate-300 text-slate-900 focus:ring-0"
                 />
                 <span>Accessibility accommodation (+30s per question)</span>
               </label>
@@ -665,7 +705,7 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
         {/* ─── ACTIVE PHASE ─────────────────────────────── */}
         {phase === 'active' && currentQuestion && (
           <div className="p-6 sm:p-8 flex-1 flex flex-col space-y-5">
-            
+
             {/* Top Bar: Progress, Timer, and Accessibility Tools */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-200">
               <div className="flex items-center gap-3">
@@ -691,13 +731,12 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
                 </button>
 
                 {/* Countdown Timer */}
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono-data font-bold ${
-                  timeRemaining <= 10
-                    ? 'bg-rose-50 text-rose-700 border border-rose-200 animate-pulse'
-                    : timeRemaining <= 20
-                      ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                      : 'bg-slate-100 text-slate-800 border border-slate-200'
-                }`}>
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono-data font-bold ${timeRemaining <= 10
+                  ? 'bg-rose-50 text-rose-700 border border-rose-200 animate-pulse'
+                  : timeRemaining <= 20
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                    : 'bg-slate-100 text-slate-800 border border-slate-200'
+                  }`}>
                   <Clock className="w-3.5 h-3.5" />
                   <span>{timeRemaining}s</span>
                 </div>
@@ -755,9 +794,8 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
 
                     {/* Test Run Output */}
                     {testOutput && (
-                      <div className={`p-3 rounded-lg font-mono-data text-[11px] border ${
-                        testRunStatus === 'passed' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
-                      }`}>
+                      <div className={`p-3 rounded-lg font-mono-data text-[11px] border ${testRunStatus === 'passed' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+                        }`}>
                         {testOutput}
                       </div>
                     )}

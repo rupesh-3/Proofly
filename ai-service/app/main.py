@@ -5,7 +5,8 @@ Run locally: uvicorn app.main:app --reload
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+from typing import Optional, Any
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -325,6 +326,7 @@ async def defense_generate(
         description=body.description,
         report_text=body.report_text,
         code_snippet=body.code_snippet,
+        repo_url=body.repo_url,
         tech_stack=body.tech_stack,
         claimed_skills=body.claimed_skills,
     )
@@ -494,26 +496,44 @@ from .provenance import (
     CommitNode,
     ProvenanceReport,
 )
+from .github_fetcher import fetch_github_repository, parse_github_url
 
 class ProvenanceAnalyzeIn(BaseModel):
     repository_identifier: str
-    files: dict[str, str]  # file_path -> source code
+    files: Optional[dict[str, str]] = None  # file_path -> source code
     commits: Optional[list[dict]] = None
+    repo_url: Optional[str] = None
 
 
 @app.post("/provenance/analyze")
-def provenance_analyze(
+async def provenance_analyze(
     body: ProvenanceAnalyzeIn,
     user_id: str = Depends(verify_jwt),
 ):
     """
     Phase 1: Ingest repository files and commit history.
-    Performs AST parsing, complexity scoring, semantic code evolution,
-    and development trajectory classification.
+    If repository is hosted on GitHub, automatically fetches real commits, file tree,
+    and raw source code for AST parsing and trajectory analysis.
     """
+    repo_files = body.files or {}
+    raw_commits = body.commits or []
+
+    # If repo URL is provided or repository_identifier is a GitHub URL/slug, fetch live GitHub data
+    github_target = body.repo_url or body.repository_identifier
+    if (not repo_files or not raw_commits) and parse_github_url(github_target):
+        try:
+            gh_data = await fetch_github_repository(github_target, max_files=15)
+            if gh_data.get("success"):
+                if not repo_files and gh_data.get("files"):
+                    repo_files = gh_data["files"]
+                if not raw_commits and gh_data.get("commits"):
+                    raw_commits = gh_data["commits"]
+        except Exception as exc:
+            print(f"[provenance_analyze] GitHub fetch fallback: {exc}")
+
     commit_nodes = []
-    if body.commits:
-        for c in body.commits:
+    if raw_commits:
+        for c in raw_commits:
             commit_nodes.append(CommitNode(
                 commit_hash=c.get("commit_hash", ""),
                 author_name=c.get("author_name", "Author"),
@@ -529,7 +549,7 @@ def provenance_analyze(
 
     report = analyze_repository_provenance(
         repo_identifier=body.repository_identifier,
-        files=body.files,
+        files=repo_files,
         commits=commit_nodes,
     )
     from dataclasses import asdict
