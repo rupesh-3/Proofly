@@ -70,6 +70,31 @@ export async function getStudentEvidence(studentId: string): Promise<Evidence[]>
   });
 }
 
+/** Fetch all evidence across campus (for faculty review queue & placement intelligence) */
+export async function getAllEvidence(): Promise<Evidence[]> {
+  const { data, error } = await supabase
+    .from('evidence')
+    .select(`
+      *,
+      evidence_skills (
+        skills ( canonical_name )
+      )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn(`getAllEvidence: ${error.message}`);
+    return [];
+  }
+
+  return (data || []).map((row) => {
+    const ev = dbToEvidence(row);
+    const skillJoin = (row.evidence_skills as Array<{ skills: { canonical_name: string } }>) || [];
+    ev.skillsTagged = skillJoin.map((s) => s.skills.canonical_name);
+    return ev;
+  });
+}
+
 /** Insert a new evidence record + link skills + optional file upload */
 export async function insertEvidence(
   studentId: string,

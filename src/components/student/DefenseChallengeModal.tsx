@@ -139,8 +139,9 @@ export const DefenseChallengeModal: React.FC<DefenseChallengeModalProps> = ({
   evidence,
   onComplete,
   onSubmit,
-  studentId = 'std-1',
+  studentId = '',
 }) => {
+  const effectiveStudentId = studentId || evidence?.studentId || '';
   // Dynamic challenge state fetched from FastAPI AI service
   const [serverChallenge, setServerChallenge] = useState<DefenseChallenge | null>(null);
   const [isLoadingServerChallenge, setIsLoadingServerChallenge] = useState(false);
@@ -515,7 +516,7 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
       const submission = {
         challenge_id: resolvedChallenge.challenge_id,
         evidence_id: resolvedChallenge.evidence_id,
-        student_id: studentId,
+        student_id: effectiveStudentId,
         responses: allResponses,
         started_at: startedAt || new Date().toISOString(),
         completed_at: new Date().toISOString(),
@@ -565,7 +566,7 @@ Hint: Inspect expected concepts (${currentQuestion?.expected_key_concepts.slice(
       const fallbackReport: DefenseReport = {
         challenge_id: resolvedChallenge.challenge_id,
         evidence_id: resolvedChallenge.evidence_id,
-        student_id: studentId,
+        student_id: effectiveStudentId,
         asi_score: avgScore,
         telemetry_confidence: 0.94,
         combined_defense_score: avgScore,

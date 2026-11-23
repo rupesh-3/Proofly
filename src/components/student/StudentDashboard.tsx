@@ -290,15 +290,35 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {studentEvidences.slice(0, 3).map((ev) => {
-            const hasDefended = Boolean(ev.defenseScore);
-            const style = getTypeStyle(ev.type);
-
-            return (
-              <div 
-                key={ev.id}
-                className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+          {studentEvidences.length === 0 ? (
+            <div className="col-span-full p-8 rounded-2xl bg-white border border-dashed border-slate-300 text-center space-y-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                <PlusCircle className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-slate-900">No Claimed Artifacts Yet</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  Submit a project repository, hackathon win, or internship experience to initiate Socratic defense verification.
+                </p>
+              </div>
+              <button
+                onClick={onOpenAddActivity}
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs inline-flex items-center gap-1.5 cursor-pointer"
               >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Submit First Proof</span>
+              </button>
+            </div>
+          ) : (
+            studentEvidences.slice(0, 3).map((ev) => {
+              const hasDefended = Boolean(ev.defenseScore);
+              const style = getTypeStyle(ev.type);
+
+              return (
+                <div 
+                  key={ev.id}
+                  className="p-5 rounded-2xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span 
@@ -367,7 +387,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </section>
 
@@ -401,50 +421,56 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
               </div>
 
               <div className="space-y-3">
-                {top4Opportunities.map(({ opp, match }) => {
-                  const youHaveList = match.youHave || [];
-                  const youNeedList = match.youNeed || [];
+                {top4Opportunities.length === 0 ? (
+                  <div className="p-8 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-500">
+                    No active industry roles found. Roles posted by campus placement partners will appear here.
+                  </div>
+                ) : (
+                  top4Opportunities.map(({ opp, match }) => {
+                    const youHaveList = match.youHave || [];
+                    const youNeedList = match.youNeed || [];
 
-                  return (
-                    <div
-                      key={opp.id}
-                      onClick={() => setActiveTab('opportunities')}
-                      className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:border-indigo-400 hover:bg-white cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <CompanyAvatar name={opp.company} size={42} />
-                        <div className="space-y-0.5">
-                          <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
-                            {opp.title}
-                          </div>
-                          <div className="text-xs font-mono text-slate-500">
-                            {opp.company} · {opp.type} · {opp.location}
-                          </div>
-                          
-                          {/* Skill Chips */}
-                          <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                            {youHaveList.slice(0, 2).map((s, idx) => (
-                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono border border-emerald-200">
-                                <CheckCircle2 className="w-2.5 h-2.5" />
-                                <span>{s.skillName}</span>
-                              </span>
-                            ))}
-                            {youNeedList.slice(0, 1).map((s, idx) => (
-                              <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-mono border border-dashed border-rose-200">
-                                <span>+{s.skillName}</span>
-                              </span>
-                            ))}
+                    return (
+                      <div
+                        key={opp.id}
+                        onClick={() => setActiveTab('opportunities')}
+                        className="p-3.5 rounded-xl bg-slate-50/70 border border-slate-200/80 hover:border-indigo-400 hover:bg-white cursor-pointer transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <CompanyAvatar name={opp.company} size={42} />
+                          <div className="space-y-0.5">
+                            <div className="font-semibold text-sm text-slate-900 group-hover:text-indigo-600 transition-colors">
+                              {opp.title}
+                            </div>
+                            <div className="text-xs font-mono text-slate-500">
+                              {opp.company} · {opp.type} · {opp.location}
+                            </div>
+                            
+                            {/* Skill Chips */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                              {youHaveList.slice(0, 2).map((s, idx) => (
+                                <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-mono border border-emerald-200">
+                                  <CheckCircle2 className="w-2.5 h-2.5" />
+                                  <span>{s.skillName}</span>
+                                </span>
+                              ))}
+                              {youNeedList.slice(0, 1).map((s, idx) => (
+                                <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-mono border border-dashed border-rose-200">
+                                  <span>+{s.skillName}</span>
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-                        <ScoreRing score={match.score} size={44} strokeWidth={4} color="#D97706" />
-                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-transform" />
+                        <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
+                          <ScoreRing score={match.score} size={44} strokeWidth={4} color="#D97706" />
+                          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-slate-700 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
 
@@ -555,26 +581,32 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
               </div>
 
               <div className="space-y-2.5">
-                {recentVerifications.map((ev) => {
-                  const style = getTypeStyle(ev.type);
+                {recentVerifications.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                    No faculty verifications yet.
+                  </div>
+                ) : (
+                  recentVerifications.map((ev) => {
+                    const style = getTypeStyle(ev.type);
 
-                  return (
-                    <div key={ev.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-900 truncate max-w-[170px]">
-                          {ev.title}
-                        </span>
-                        <span className="text-[10px] font-mono font-semibold" style={{ color: style.color }}>
-                          {ev.type}
-                        </span>
+                    return (
+                      <div key={ev.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-semibold text-slate-900 truncate max-w-[170px]">
+                            {ev.title}
+                          </span>
+                          <span className="text-[10px] font-mono font-semibold" style={{ color: style.color }}>
+                            {ev.type}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                          <span>Attested by {ev.verifiedBy?.split(' ')[1] || 'Faculty'}</span>
+                          <span>{ev.date}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] font-mono text-slate-500">
-                        <span>Attested by {ev.verifiedBy?.split(' ')[1] || 'Faculty'}</span>
-                        <span>{ev.date}</span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                )}
               </div>
             </div>
 
@@ -595,21 +627,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
               </div>
 
               <div className="space-y-2.5">
-                {upcomingDeadlines.map((opp) => (
-                  <div key={opp.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-semibold text-slate-900 truncate max-w-[170px]">
-                        {opp.title}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-mono font-semibold border border-amber-200">
-                        {opp.deadline}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-slate-500 truncate">
-                      {opp.company} · {opp.type}
-                    </div>
+                {upcomingDeadlines.length === 0 ? (
+                  <div className="p-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center text-xs text-slate-400">
+                    No active deadlines.
                   </div>
-                ))}
+                ) : (
+                  upcomingDeadlines.map((opp) => (
+                    <div key={opp.id} className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-slate-900 truncate max-w-[170px]">
+                          {opp.title}
+                        </span>
+                        <span className="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-mono font-semibold border border-amber-200">
+                          {opp.deadline}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {opp.company} · {opp.type}
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -634,7 +672,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onOpenAddAct
                 <div className="w-full h-3 rounded-full bg-slate-100 overflow-hidden flex">
                   {Object.entries(evidenceTypeCounts).map(([type, count]) => {
                     const style = getTypeStyle(type as EvidenceType);
-                    const widthPct = (count / studentEvidences.length) * 100;
+                    const widthPct = studentEvidences.length > 0 ? (count / studentEvidences.length) * 100 : 0;
                     return (
                       <div
                         key={type}

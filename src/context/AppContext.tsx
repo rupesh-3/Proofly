@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import { 
   User, 
   Evidence, 
@@ -14,17 +14,10 @@ import {
   SimilarityResult,
   EvidenceType
 } from '../types';
-import { 
-  MOCK_USERS, 
-  MOCK_EVIDENCES, 
-  INSTITUTIONAL_PROJECT_ARCHIVE, 
-  MOCK_OPPORTUNITIES, 
-  MOCK_APPLICATIONS, 
-  MOCK_PROPOSALS, 
-  MOCK_NOTIFICATIONS 
-} from '../data/mockData';
 import { useAuth } from './AuthContext';
-import { insertEvidence, getStudentEvidence } from '../data/supabase/evidence';
+import { insertEvidence, getStudentEvidence, getAllEvidence } from '../data/supabase/evidence';
+import { getAllProfiles, updateProfile } from '../data/supabase/profiles';
+import { getOpportunities, getStudentApplications } from '../data/supabase/opportunities';
 import { submitVerification } from '../data/supabase/verifications';
 import { embedEvidence, checkProjectSimilarity as checkProjectSimilarityAI } from '../data/ai';
 import { 
@@ -98,46 +91,71 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const auth = useAuth();
 
-  // Users & Role state
-  const [allUsers, setAllUsers] = useState<User[]>(MOCK_USERS);
-  const [currentUserId, setCurrentUserId] = useState<string>('std-1');
+  // Users & Role state (initialized empty, populated from Supabase)
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
-  // Derive active user from Supabase auth profile or selected demo persona
+  // Fetch real user profiles from Supabase
+  useEffect(() => {
+    if (auth.isConfigured) {
+      getAllProfiles()
+        .then(profiles => {
+          if (profiles && profiles.length > 0) {
+            setAllUsers(profiles);
+          }
+        })
+        .catch(err => {
+          console.warn('[AppContext] Could not fetch Supabase profiles:', err);
+        });
+    }
+  }, [auth.isConfigured, auth.user?.id]);
+
+  // Derive active user strictly from Supabase auth profile
   const currentUser: User = useMemo(() => {
     if (auth.profile) {
       return {
         id: auth.profile.id,
         name: auth.profile.full_name || auth.user?.email?.split('@')[0] || 'Member',
-        email: auth.user?.email || (auth.demoUser?.email ?? ''),
+        email: auth.user?.email || '',
         role: (auth.profile.role as UserRole) || 'student',
         avatar: auth.profile.avatar_url || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&q=80`,
-        college: auth.profile.college || 'Stanford University',
-        department: auth.profile.department || 'Computer Science & AI',
-        headline: auth.profile.headline || 'Institutional Scholar & Verified Builder',
+        college: auth.profile.college || 'Institutional Campus',
+        department: auth.profile.department || 'Academic Department',
+        headline: auth.profile.headline || 'Verified Scholar',
         bio: auth.profile.bio || '',
         batch: auth.profile.batch ? `Class of ${auth.profile.batch}` : 'Class of 2026',
         isVerifiedStudent: true,
       };
     }
-    if (auth.demoUser) {
-      const match = allUsers.find(u => u.id === auth.demoUser?.id);
-      if (match) return match;
+    if (auth.user) {
       return {
-        id: auth.demoUser.id,
-        name: auth.demoUser.name,
-        email: auth.demoUser.email,
-        role: auth.demoUser.role as UserRole,
-        avatar: auth.demoUser.avatar,
-        college: auth.demoUser.college,
-        department: auth.demoUser.department,
-        headline: auth.demoUser.headline,
-        bio: auth.demoUser.bio,
-        batch: auth.demoUser.batch || 'Class of 2026',
+        id: auth.user.id,
+        name: auth.user.email?.split('@')[0] || 'Member',
+        email: auth.user.email || '',
+        role: 'student' as UserRole,
+        avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&q=80`,
+        college: 'Institutional Campus',
+        department: 'Academic Department',
+        headline: 'Verified Scholar',
+        bio: '',
+        batch: 'Class of 2026',
         isVerifiedStudent: true,
       };
     }
-    return allUsers.find(u => u.id === currentUserId) || allUsers[0];
-  }, [auth.profile, auth.demoUser, auth.user, allUsers, currentUserId]);
+    return {
+      id: '',
+      name: 'Campus Scholar',
+      email: '',
+      role: 'student' as UserRole,
+      avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&q=80`,
+      college: 'Institutional Campus',
+      department: 'Academic Department',
+      headline: 'Institutional Scholar',
+      bio: '',
+      batch: '',
+      isVerifiedStudent: false,
+    };
+  }, [auth.profile, auth.user]);
 
   const currentRole = currentUser.role;
 
@@ -152,22 +170,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Data states
-  const [evidences, setEvidences] = useState<Evidence[]>(MOCK_EVIDENCES);
-  const [institutionalProjects, setInstitutionalProjects] = useState<Project[]>(INSTITUTIONAL_PROJECT_ARCHIVE);
-  const [proposals, setProposals] = useState<ProjectProposal[]>(MOCK_PROPOSALS);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(MOCK_OPPORTUNITIES);
-  const [applications, setApplications] = useState<Application[]>(MOCK_APPLICATIONS);
-  const [notifications, setNotifications] = useState<InAppNotification[]>(MOCK_NOTIFICATIONS);
+  // Data states (initialized empty for live data)
+  const [evidences, setEvidences] = useState<Evidence[]>([]);
+  const [institutionalProjects, setInstitutionalProjects] = useState<Project[]>([]);
+  const [proposals, setProposals] = useState<ProjectProposal[]>([]);
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [isCommandPaletteOpen, setCommandPaletteOpen] = useState<boolean>(false);
+
+  // Fetch real opportunities from Supabase
+  useEffect(() => {
+    if (auth.isConfigured) {
+      getOpportunities()
+        .then(opps => {
+          if (opps && opps.length > 0) {
+            setOpportunities(opps);
+          }
+        })
+        .catch(err => {
+          console.warn('[AppContext] Could not fetch Supabase opportunities:', err);
+        });
+    }
+  }, [auth.isConfigured]);
 
   // Switch active user
   const switchUser = (userId: string) => {
     const user = allUsers.find(u => u.id === userId);
     if (user) {
       setCurrentUserId(userId);
-      auth.signInAsDemo(user);
-      // Route appropriately if currently on a role-specific page
       if (user.role === 'student' && (activeTab === 'faculty' || activeTab === 'placement')) {
         _setActiveTab('dashboard');
       } else if (user.role === 'faculty') {
@@ -178,7 +209,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateCurrentUserProfile = (updates: Partial<User>) => {
+  const updateCurrentUserProfile = async (updates: Partial<User>) => {
     setAllUsers(prev => {
       const exists = prev.some(u => u.id === currentUser.id);
       if (exists) {
@@ -187,25 +218,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return [{ ...currentUser, ...updates }, ...prev];
       }
     });
+
+    if (auth.user?.id) {
+      try {
+        await updateProfile(auth.user.id, {
+          full_name: updates.name,
+          headline: updates.headline,
+          bio: updates.bio,
+          department: updates.department,
+          college: updates.college,
+          github_url: updates.github,
+          linkedin_url: updates.linkedin,
+          website_url: updates.website,
+        });
+        await auth.refreshProfile();
+      } catch (e) {
+        console.warn('[AppContext] Could not update profile in Supabase:', e);
+      }
+    }
   };
 
-  // Fetch real student evidence from Supabase when authenticated
+  // Fetch real evidence and applications from Supabase when authenticated
   React.useEffect(() => {
     if (auth.isConfigured && auth.user?.id) {
-      getStudentEvidence(auth.user.id)
-        .then(realEvs => {
-          if (realEvs && realEvs.length > 0) {
-            setEvidences(prev => {
-              const others = prev.filter(e => e.studentId !== auth.user!.id);
-              return [...realEvs, ...others];
-            });
-          }
-        })
-        .catch(err => {
-          console.warn('[AppContext] Could not fetch Supabase evidence:', err);
-        });
+      const role = auth.profile?.role;
+      if (role === 'faculty' || role === 'placement') {
+        getAllEvidence()
+          .then((realEvs: Evidence[]) => {
+            if (realEvs) setEvidences(realEvs);
+          })
+          .catch((err: any) => console.warn('[AppContext] Could not fetch all evidence:', err));
+      } else {
+        getStudentEvidence(auth.user.id)
+          .then((realEvs: Evidence[]) => {
+            if (realEvs) setEvidences(realEvs);
+          })
+          .catch((err: any) => {
+            console.warn('[AppContext] Could not fetch Supabase evidence:', err);
+          });
+
+        getStudentApplications(auth.user.id)
+          .then((realApps: Application[]) => {
+            if (realApps) setApplications(realApps);
+          })
+          .catch((err: any) => {
+            console.warn('[AppContext] Could not fetch Supabase applications:', err);
+          });
+      }
     }
-  }, [auth.isConfigured, auth.user?.id]);
+  }, [auth.isConfigured, auth.user?.id, auth.profile?.role]);
 
   // Student specific evidences
   const studentEvidences = useMemo(() => {

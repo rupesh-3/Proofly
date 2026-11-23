@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { MOCK_USERS } from '../../data/mockData';
 import { 
   Sparkles, 
   ShieldCheck, 
@@ -32,7 +31,6 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
   const { 
     signInWithEmail, 
     signUpWithEmail, 
-    signInAsDemo, 
     isConfigured 
   } = useAuth();
   const { setActiveTab, triggerCelebration } = useApp();
@@ -40,8 +38,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   
   // Sign In state
-  const [signInEmail, setSignInEmail] = useState('alex.rivera@stanford.edu');
-  const [signInPassword, setSignInPassword] = useState('Proofly@2026');
+  const [signInEmail, setSignInEmail] = useState('');
+  const [signInPassword, setSignInPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // Sign Up state
@@ -75,12 +73,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
         triggerCelebration();
         if (onSuccess) onSuccess();
       } else {
-        const matchedDemo = MOCK_USERS.find(
-          u => u.email.toLowerCase() === signInEmail.trim().toLowerCase()
-        ) || MOCK_USERS[0];
-        signInAsDemo(matchedDemo);
-        triggerCelebration();
-        if (onSuccess) onSuccess();
+        setErrorMessage('Authentication service is not configured. Please check environment variables.');
       }
     } catch (err: any) {
       console.error('[AuthPage] Sign in failed:', err);
@@ -130,36 +123,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
           if (onSuccess) onSuccess();
         }
       } else {
-        const newDemo = {
-          id: `usr-${Date.now()}`,
-          name: signUpName.trim(),
-          email: signUpEmail.trim(),
-          role: selectedRole,
-          avatar: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&q=80`,
-          college: 'Stanford University',
-          department: department,
-          headline: `${selectedRole === 'student' ? 'Student' : selectedRole === 'faculty' ? 'Faculty Professor' : 'Placement Director'} · ${department}`,
-          bio: 'Registered campus capability account.',
-          batch: `Class of ${batch}`,
-        };
-        signInAsDemo(newDemo);
-        triggerCelebration();
-        if (onSuccess) onSuccess();
+        setErrorMessage('Registration service is not configured.');
       }
     } catch (err: any) {
       console.error('[AuthPage] Sign up failed:', err);
       setErrorMessage(err?.message || 'Unable to register account. Please check details and try again.');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleInstantDemo = (userId: string) => {
-    const demo = MOCK_USERS.find(u => u.id === userId);
-    if (demo) {
-      signInAsDemo(demo);
-      triggerCelebration();
-      if (onSuccess) onSuccess();
     }
   };
 
@@ -292,34 +262,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onSuccess, onExplorePublic }
               </div>
             </div>
 
-            {/* Instant Demo Access */}
+            {/* Institutional Security Notice */}
             <div className="pt-6 mt-6 border-t border-slate-200">
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[11px] font-mono text-slate-500 font-semibold uppercase tracking-wider">
-                  Instant Demo Access
+              <div className="flex items-center gap-2 mb-2">
+                <Database className="w-4 h-4 text-indigo-600" />
+                <span className="text-[11px] font-mono text-slate-700 font-semibold uppercase tracking-wider">
+                  Campus Identity Protection
                 </span>
-                <span className="text-[10px] text-indigo-600 font-mono font-medium">1-Click Sign In</span>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {MOCK_USERS.map(demo => (
-                  <button
-                    key={demo.id}
-                    onClick={() => handleInstantDemo(demo.id)}
-                    className="p-2 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 shadow-xs transition-all text-left group cursor-pointer"
-                    title={`Sign in as ${demo.name} (${demo.role})`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <img src={demo.avatar} alt={demo.name} className="w-5 h-5 rounded-full object-cover" />
-                      <span className="text-[10px] font-mono uppercase text-indigo-600 font-bold">
-                        {demo.role}
-                      </span>
-                    </div>
-                    <div className="text-[11px] font-semibold text-slate-900 truncate">
-                      {demo.name.split(' ')[0]}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Direct authentication via Supabase Auth and Row Level Security ensures institutional credentials and student portfolios remain tamper-proof.
+              </p>
             </div>
           </div>
 

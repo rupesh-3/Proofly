@@ -61,7 +61,7 @@ export const PlacementPortal: React.FC = () => {
 
   // Candidates lookup
   const getCandidateName = (id: string) => {
-    return allUsers.find(u => u.id === id)?.name || 'Alex Rivera';
+    return allUsers.find(u => u.id === id)?.name || 'Candidate';
   };
 
   const getOpp = (id: string) => {

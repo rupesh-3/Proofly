@@ -64,19 +64,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [demoUser, setDemoUser] = useState<DemoUser | null>(() => {
-    try {
-      const saved = localStorage.getItem(DEMO_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [demoUser, setDemoUser] = useState<DemoUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isConfigured = isSupabaseConfigured;
 
-  const fetchProfile = useCallback(async (userId: string) => {
+  // Ensure any legacy demo persona is purged from local storage
+  useEffect(() => {
+    try {
+      localStorage.removeItem(DEMO_STORAGE_KEY);
+    } catch {
+      // Ignored
+    }
+  }, []);
+
+  const fetchProfile = useCallback(async (userId: string, authUser?: AuthUser | null) => {
     if (!isConfigured) return;
     try {
       const { data, error } = await supabase
@@ -87,18 +89,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.warn('[AuthContext] Profile fetch error:', error.message);
-        return;
       }
       if (data) {
         setProfile(data as Profile);
+        return;
       }
+
+      // If no profile row exists in Supabase table yet, auto-provision from auth metadata!
+      const activeUser = authUser || user;
+      const meta = (activeUser?.user_metadata || {}) as Record<string, any>;
+      const fallbackProfile: Profile = {
+        id: userId,
+        role: (meta.role as any) || 'student',
+        full_name: meta.full_name || activeUser?.email?.split('@')[0] || 'Campus Scholar',
+        handle: meta.handle || null,
+        department: meta.department || 'Computer Science & AI',
+        batch: meta.batch ? parseInt(String(meta.batch)) || 2026 : 2026,
+        headline: meta.headline || 'Verified Scholar',
+        bio: meta.bio || '',
+        avatar_url: meta.avatar_url || null,
+        github_url: meta.github_url || null,
+        linkedin_url: meta.linkedin_url || null,
+        website_url: meta.website_url || null,
+        college: meta.college || 'Stanford University',
+        is_public: true,
+      };
+
+      setProfile(fallbackProfile);
+
+      // Attempt to persist the profile row into Supabase public.profiles
+      supabase
+        .from('profiles')
+        .upsert({
+          id: userId,
+          role: fallbackProfile.role,
+          full_name: fallbackProfile.full_name,
+          department: fallbackProfile.department,
+          batch: fallbackProfile.batch,
+          headline: fallbackProfile.headline,
+          college: fallbackProfile.college,
+          is_public: true,
+        }, { onConflict: 'id' })
+        .then(({ error: upsertErr }) => {
+          if (upsertErr) {
+            console.warn('[AuthContext] Auto-upsert profile row info:', upsertErr.message);
+          }
+        });
     } catch (err) {
       console.warn('[AuthContext] Profile fetch exception:', err);
     }
-  }, [isConfigured]);
+  }, [isConfigured, user]);
 
   const refreshProfile = useCallback(async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile(user.id, user);
   }, [user, fetchProfile]);
 
   useEffect(() => {
@@ -112,8 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setDemoUser(null);
-        localStorage.removeItem(DEMO_STORAGE_KEY);
         fetchProfile(session.user.id);
       }
       setIsLoading(false);
@@ -126,8 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChange(async (authUser) => {
       setUser(authUser);
       if (authUser) {
-        setDemoUser(null);
-        localStorage.removeItem(DEMO_STORAGE_KEY);
         await fetchProfile(authUser.id);
         const { data: { session } } = await supabase.auth.getSession();
         setSession(session);
@@ -143,14 +182,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithEmail = async (email: string, password: string) => {
     if (!isConfigured) {
       throw new Error(
-        'Supabase credentials not configured in .env. Please add VITE_SUPABASE_ANON_KEY or use Instant Demo Access.'
+        'Supabase credentials not configured in .env. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
       );
     }
     const data = await signIn(email, password);
     setUser(data.user);
     setSession(data.session);
     setDemoUser(null);
-    localStorage.removeItem(DEMO_STORAGE_KEY);
     if (data.user) await fetchProfile(data.user.id);
   };
 
@@ -164,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   ) => {
     if (!isConfigured) {
       throw new Error(
-        'Supabase credentials not configured in .env. Please add VITE_SUPABASE_ANON_KEY or use Instant Demo Access.'
+        'Supabase credentials not configured in .env. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
       );
     }
     const data = await signUp(email, password, fullName, role, department, batch);
@@ -172,34 +210,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.user);
       setSession(data.session);
       setDemoUser(null);
-      localStorage.removeItem(DEMO_STORAGE_KEY);
       setTimeout(() => fetchProfile(data.user!.id), 800);
       return { needsConfirmation: !data.session };
     }
     return { needsConfirmation: true };
   };
 
-  const signInAsDemo = (persona: DemoUser) => {
-    setDemoUser(persona);
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(persona));
-    setUser(null);
-    setSession(null);
-    setProfile({
-      id: persona.id,
-      role: persona.role,
-      full_name: persona.name,
-      handle: persona.id,
-      department: persona.department,
-      batch: persona.batch ? parseInt(persona.batch.replace(/\D/g, '')) || 2026 : 2026,
-      headline: persona.headline,
-      bio: persona.bio,
-      avatar_url: persona.avatar,
-      github_url: null,
-      linkedin_url: null,
-      website_url: null,
-      college: persona.college,
-      is_public: true,
-    });
+  const signInAsDemo = (_persona: DemoUser) => {
+    console.warn('Demo persona sign-in is disabled. Please sign in with real Supabase credentials.');
   };
 
   const logOut = async () => {
@@ -217,7 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem(DEMO_STORAGE_KEY);
   };
 
-  const isAuthenticated = Boolean(user || demoUser);
+  const isAuthenticated = Boolean(user);
 
   return (
     <AuthContext.Provider value={{

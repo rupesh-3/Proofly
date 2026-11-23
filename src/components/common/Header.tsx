@@ -286,41 +286,50 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddActivity, onOpenAuth })
 
             {showRoleDropdown && (
               <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl p-2 z-50">
-                <div className="px-3 py-2 text-[11px] text-slate-400 uppercase tracking-wider font-mono-data">
-                  Switch Demo Persona
+                <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                  <div className="font-semibold text-xs text-slate-900 truncate">{currentUser.name}</div>
+                  <div className="text-[11px] text-slate-500 truncate">{currentUser.email || `${currentUser.role} account`}</div>
+                  <div className="text-[10px] font-mono-data text-indigo-600 uppercase mt-0.5">{currentUser.role} · {currentUser.department}</div>
                 </div>
-                {allUsers.map(u => (
-                  <button
-                    key={u.id}
-                    onClick={() => {
-                      switchUser(u.id);
-                      setShowRoleDropdown(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left text-xs transition-colors ${
-                      u.id === currentUser.id 
-                        ? 'bg-blue-50 text-blue-700 font-semibold' 
-                        : 'text-slate-700 hover:bg-slate-50'
-                    }`}
-                  >
-                    <img 
-                      src={u.avatar} 
-                      alt={u.name} 
-                      referrerPolicy="no-referrer"
-                      className="w-6 h-6 rounded-full object-cover" 
-                    />
-                    <div className="flex-1 truncate">
-                      <div className="font-medium text-slate-900 truncate">{u.name}</div>
-                      <div className="text-[10px] text-slate-500 capitalize">{u.role} · {u.department}</div>
+
+                {allUsers.length > 1 && (
+                  <>
+                    <div className="px-3 py-1.5 text-[10px] text-slate-400 uppercase tracking-wider font-mono-data">
+                      Campus Directory
                     </div>
-                  </button>
-                ))}
-                <div className="mt-2 pt-2 border-t border-slate-100 px-2 space-y-1">
+                    <div className="max-h-40 overflow-y-auto space-y-0.5">
+                      {allUsers.filter(u => u.id !== currentUser.id).map(u => (
+                        <button
+                          key={u.id}
+                          onClick={() => {
+                            switchUser(u.id);
+                            setShowRoleDropdown(false);
+                          }}
+                          className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
+                        >
+                          <img 
+                            src={u.avatar} 
+                            alt={u.name} 
+                            referrerPolicy="no-referrer"
+                            className="w-5 h-5 rounded-full object-cover" 
+                          />
+                          <div className="flex-1 truncate">
+                            <div className="font-medium text-slate-900 truncate text-[11px]">{u.name}</div>
+                            <div className="text-[9px] text-slate-400 capitalize">{u.role}</div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div className="mt-2 pt-2 border-t border-slate-100 px-1 space-y-1">
                   <button
                     onClick={() => {
                       setShowRoleDropdown(false);
                       onOpenAuth();
                     }}
-                    className="w-full text-left text-[11px] text-blue-600 hover:underline py-1 block cursor-pointer"
+                    className="w-full text-left text-[11px] text-indigo-600 hover:bg-indigo-50 rounded-md px-2 py-1.5 block cursor-pointer transition-colors"
                   >
                     Switch or connect another ID
                   </button>
@@ -329,7 +338,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAddActivity, onOpenAuth })
                       setShowRoleDropdown(false);
                       await logOut();
                     }}
-                    className="w-full text-left text-[11px] text-red-600 hover:bg-red-50 rounded-md px-1.5 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full text-left text-[11px] text-red-600 hover:bg-red-50 rounded-md px-2 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5" />
                     <span>Sign Out of Workspace</span>

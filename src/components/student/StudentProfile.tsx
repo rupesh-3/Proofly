@@ -133,82 +133,37 @@ export const StudentProfile: React.FC = () => {
   const totalProofsCount = studentEvidences.length;
   const facultyVerifiedCount = studentEvidences.filter(e => e.verificationStatus === 'verified').length;
 
-  // 3 Featured Projects
-  const featuredProjects: CaseStudy[] = useMemo(() => [
-    {
-      id: 'cs-1',
-      title: 'SynapseNet: Sparse Attention Visual Transformer',
-      coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-      oneLineOutcome: '2.8x speedup over standard MultiheadAttention on 4K sequences.',
-      tags: ['PyTorch', 'CUDA', 'Python', 'Computer Vision'],
-      isVerified: true,
-      similarityMatch: '9% (original work)',
-      problem: 'Quadratic attention complexity caused critical GPU memory bottlenecks on high-resolution image patches during real-time edge processing.',
-      role: 'Lead Architect & Core Implementer (Senior Capstone)',
-      approach: 'Implemented custom linear-time sparse attention kernel in CUDA/C++ and compiled into PyTorch with fused forward/backward kernels.',
-      result: 'Achieved 2.8x inference speedup with <0.4% perplexity difference across 12M synthetic test tokens.',
-      metrics: [
-        { label: 'Latency Drop', value: '-64%' },
-        { label: 'Peak Memory', value: '4.2GB -> 1.5GB' },
-        { label: 'Originality Score', value: '91/100' }
-      ],
-      verifier: 'Prof. Alan Vance',
-      verifierTitle: 'Chair of Computer Systems, Stanford University',
-      verifierAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
-      verifierQuote: 'Alex demonstrated exceptional mastery in kernel programming and numerical precision analysis. The Capstone committee ranked this in the top 1%.',
-      verifiedDate: 'May 20, 2026',
-      githubUrl: 'https://github.com/alexrivera-ai/synapsenet-transformer',
-      liveUrl: 'https://synapsenet.stanford.edu'
-    },
-    {
-      id: 'cs-2',
-      title: 'Distributed Model Inference Microservices',
-      coverImage: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=800&q=80',
-      oneLineOutcome: 'Reduced p99 inference latency by 34% on 8x H100 clusters.',
-      tags: ['Python', 'Docker', 'TensorRT', 'Microservices'],
-      isVerified: true,
-      similarityMatch: '12% max match',
-      problem: 'Microservice suffered latency spikes under heavy concurrent prompt streaming and uncoordinated batch scheduling.',
-      role: 'Systems Research Intern (Cerebras & Stanford AI Lab)',
-      approach: 'Architected asynchronous TensorRT pipelines with zero-copy shared memory queues and dynamic batch grouping.',
-      result: 'Decreased p99 response time from 142ms to 93ms across 12M daily requests without dropping token delivery SLAs.',
-      metrics: [
-        { label: 'p99 Latency', value: '93ms' },
-        { label: 'Throughput', value: '+52% req/s' },
-        { label: 'Hardware Cost', value: '-22%' }
-      ],
-      verifier: 'Dr. Michael Chen',
-      verifierTitle: 'Principal Research Scientist, Cerebras Systems',
-      verifierAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80',
-      verifierQuote: 'Alex rapidly grasped our low-level inference stack and delivered production-grade pipeline optimizations ahead of schedule.',
-      verifiedDate: 'Aug 28, 2026',
-      githubUrl: 'https://github.com/alexrivera-ai/distributed-inference-bench'
-    },
-    {
-      id: 'cs-3',
-      title: 'EduPulse: Multimodal Speech-to-Diagram Engine',
-      coverImage: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80',
-      oneLineOutcome: 'Grand Champion / 1st of 240 collegiate hackathon teams.',
-      tags: ['TypeScript', 'React', 'Gemini API', 'Canvas API'],
-      isVerified: true,
-      similarityMatch: '7% (original capstone submission)',
-      problem: 'Classroom lectures lacked real-time visual diagram synthesis for complex algorithms and organic chemistry structures.',
-      role: 'Full-Stack Lead & Engine Developer (36-hour sprint)',
-      approach: 'Combined Whisper streaming transcription with structured Gemini API chaining to dynamically render declarative SVG diagram canvases.',
-      result: 'Selected 1st of 240 collegiate teams at HackMIT 2025; TA pilot adopted for CS 161 (Algorithms) lecture recordings.',
-      metrics: [
-        { label: 'Hackathon Rank', value: '1st / 240' },
-        { label: 'Synthesis Delay', value: '<800ms' },
-        { label: 'Active Students', value: '380 TA users' }
-      ],
-      verifier: 'Dr. Sarah Jenkins',
-      verifierTitle: 'HackMIT Grand Jury & MIT Media Lab Fellow',
-      verifierAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=120&q=80',
-      verifierQuote: 'Flawless execution under tight time constraints. The generative visual feedback loop was remarkably intuitive.',
-      verifiedDate: 'Nov 25, 2025',
-      githubUrl: 'https://github.com/alexrivera-ai/edupulse-scribe'
-    }
-  ], []);
+  // Featured Projects derived from verified student evidences
+  const featuredProjects: CaseStudy[] = useMemo(() => {
+    return studentEvidences
+      .filter(e => e.type === 'Project' || e.type === 'Internship' || e.type === 'Hackathon')
+      .slice(0, 3)
+      .map(e => ({
+        id: e.id,
+        title: e.title,
+        coverImage: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+        oneLineOutcome: e.metrics || (e.description ? `${e.description.slice(0, 80)}...` : 'Verified institutional deliverable.'),
+        tags: e.skillsTagged || [],
+        isVerified: e.verificationStatus === 'verified',
+        similarityMatch: (e as any).similarityFlag ? 'Flagged similarity' : 'Original verified work',
+        problem: e.description || 'Demonstrated technical execution and engineering deliverables.',
+        role: `${e.type} Contributor`,
+        approach: e.description || 'Full stack and architecture execution.',
+        result: e.metrics || 'Successfully completed and evaluated.',
+        metrics: [
+          { label: 'Type', value: e.type },
+          { label: 'Status', value: e.verificationStatus },
+          { label: 'Skills', value: `${e.skillsTagged?.length || 0} Tagged` }
+        ],
+        verifier: e.verifiedBy || 'Pending Faculty Review',
+        verifierTitle: 'Academic Faculty Committee',
+        verifierAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80',
+        verifierQuote: (e as any).remarks || e.rejectionReason || 'Competency verification in progress.',
+        verifiedDate: e.verifiedAt || e.date,
+        githubUrl: e.url,
+        liveUrl: e.url
+      }));
+  }, [studentEvidences]);
 
   // Top 6 skills
   const top6Skills = useMemo(() => studentSkills.slice(0, 6), [studentSkills]);
@@ -593,12 +548,20 @@ export const StudentProfile: React.FC = () => {
             </p>
           </div>
           <span className="text-xs font-mono text-indigo-600 font-semibold">
-            3 verified case studies
+            {featuredProjects.length} verified {featuredProjects.length === 1 ? 'case study' : 'case studies'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {featuredProjects.map((project) => (
+          {featuredProjects.length === 0 ? (
+            <div className="col-span-full p-8 rounded-2xl bg-white border border-dashed border-slate-300 text-center space-y-2">
+              <p className="text-xs font-semibold text-slate-800">No verified project case studies yet</p>
+              <p className="text-[11px] text-slate-500">
+                Submit your capstone, GitHub repository, or internship proof in Add Proof to generate your verified case studies.
+              </p>
+            </div>
+          ) : (
+            featuredProjects.map((project) => (
             <div
               key={project.id}
               onClick={() => setActiveCaseStudy(project)}
@@ -658,7 +621,7 @@ export const StudentProfile: React.FC = () => {
                 </span>
               </div>
             </div>
-          ))}
+          )))}
         </div>
       </section>
 
@@ -902,10 +865,10 @@ export const StudentProfile: React.FC = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="space-y-2">
             <h3 className="text-2xl font-bold text-slate-900">
-              Inquire About Alex Rivera
+              Inquire About {currentUser.name}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 max-w-lg">
-              Seeking Machine Learning Engineering or Systems Research roles starting Fall 2026.
+              {currentUser.headline || 'Verified Student Scholar & Builder'}
             </p>
           </div>
 
@@ -1290,7 +1253,7 @@ export const StudentProfile: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-600">
-              Scan to view Alex Rivera's verified mobile portfolio and cryptographic skill attestations.
+              Scan to view {currentUser.name}'s verified mobile portfolio and cryptographic skill attestations.
             </p>
 
             <button

@@ -1,4 +1,5 @@
 import { supabase } from '../../lib/supabase';
+import type { User, UserRole } from '../../types';
 
 export interface ProfileUpdate {
   full_name?: string;
@@ -13,6 +14,39 @@ export interface ProfileUpdate {
   website_url?: string;
   college?: string;
   is_public?: boolean;
+}
+
+export function profileToUser(row: any): User {
+  return {
+    id: row.id,
+    name: row.full_name || 'Campus Scholar',
+    email: row.email || '',
+    role: (row.role as UserRole) || 'student',
+    avatar: row.avatar_url || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=280&q=80`,
+    college: row.college || 'Stanford University',
+    department: row.department || 'Computer Science & AI',
+    headline: row.headline || 'Verified Scholar',
+    bio: row.bio || '',
+    github: row.github_url || '',
+    linkedin: row.linkedin_url || '',
+    website: row.website_url || '',
+    batch: row.batch ? `Class of ${row.batch}` : 'Class of 2026',
+    isVerifiedStudent: true,
+  };
+}
+
+/** Fetch all registered profiles from Supabase */
+export async function getAllProfiles(): Promise<User[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn(`getAllProfiles: ${error.message}`);
+    return [];
+  }
+  return (data || []).map(profileToUser);
 }
 
 /** Fetch a profile by user ID */

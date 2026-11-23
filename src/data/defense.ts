@@ -19,7 +19,7 @@ async function fetchAI<T>(
   } catch {
     // Local / unauthenticated fallback
   }
-  const effectiveToken = token || localStorage.getItem('proofly_auth_token') || 'std-1';
+  const effectiveToken = token || localStorage.getItem('proofly_auth_token') || '';
 
   const res = await fetch(`${AI_URL}${path}`, {
     method,
