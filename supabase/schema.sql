@@ -191,12 +191,33 @@ create table notifications (
 create or replace function handle_new_user()
 returns trigger language plpgsql security definer as $$
 begin
-  insert into public.profiles (id, full_name, role)
+  insert into public.profiles (
+    id,
+    full_name,
+    role,
+    department,
+    batch,
+    college,
+    headline,
+    is_public
+  )
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
-    'student'
-  );
+    coalesce((new.raw_user_meta_data->>'role')::user_role, 'student'::user_role),
+    coalesce(new.raw_user_meta_data->>'department', 'Computer Science & AI'),
+    coalesce((new.raw_user_meta_data->>'batch')::int, 2026),
+    coalesce(new.raw_user_meta_data->>'college', 'Campus University'),
+    coalesce(new.raw_user_meta_data->>'headline', 'Verified Scholar'),
+    true
+  )
+  on conflict (id) do update set
+    full_name   = excluded.full_name,
+    role        = excluded.role,
+    department  = coalesce(excluded.department, profiles.department),
+    batch       = coalesce(excluded.batch, profiles.batch),
+    college     = coalesce(excluded.college, profiles.college),
+    is_public   = true;
   return new;
 end;
 $$;
